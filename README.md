@@ -19,7 +19,8 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
 - Duplicate `.env.example` to `.env.local`, then paste:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- Optional admin helpers: set `ADMIN_EMAILS` to a comma-separated list of operator emails (enables manual verification button in `/app/identity`).
+  - `SUPABASE_SERVICE_ROLE_KEY` (required by Stripe webhooks to update billing fields)
+  - `ADMIN_EMAILS` (optional list enabling manual verification button in `/app/identity`).
 - In Supabase Storage, create a bucket named `ids` (standard bucket). Add a policy so authenticated users can upload and read their own files, for example:
   ```sql
   create policy "Allow authenticated uploads" on storage.objects
@@ -34,7 +35,21 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
   ```
 - In Netlify, add the same variables under Site Settings → Build & deploy → Environment so production builds can reach Supabase.
 - Run the SQL in `supabase/migrations/001_init.sql` once via the Supabase SQL editor or CLI to create tables and RLS policies.
+- Apply subsequent migrations in order (`002_billing.sql`, etc.) to keep the schema aligned with new features.
 - After deploying, visit `/{locale}/admin/migrations` (e.g. `/it/admin/migrations`) to review migrations and confirm they have been executed.
+
+## Stripe Setup
+
+- Set the following environment variables locally and in Netlify:
+  - `NEXT_PUBLIC_SITE_URL`
+  - `STRIPE_PUBLIC_KEY`
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_PRICE_STARTER`
+  - `STRIPE_PRICE_PRO`
+  - `STRIPE_WEBHOOK_SECRET`
+- Create two subscription prices in Stripe (Starter €49/mo, Pro €149/mo) and paste their price IDs in the env vars above.
+- Configure a webhook endpoint pointing to `<your-site>/api/webhooks/stripe` and subscribe to `checkout.session.completed` plus `customer.subscription.updated`.
+- Once configured, the pricing buttons will redirect users to Stripe Checkout; missing keys automatically disable the buttons.
 
 ## i18n & Routing
 
