@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web Legal Manager – Content Takedowns</title>
+  <meta name="description" content="Delisting & source removals for stolen content. Fast, privacy‑first. IT/EN." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --wlm-yellow:#FFE94D; /* soft safety yellow */
+      --wlm-yellow-strong:#FFD600;
+      --wlm-black:#0B0B0B; /* near black */
+      --wlm-grey:#202225; /* soft dark */
+      --wlm-text:#EDEDED;
+      --maxw:1120px;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(255,233,77,0.18), transparent 55%),
+                  linear-gradient(180deg, #0B0B0B 0%, #111213 100%);
+      color:var(--wlm-text);
+    }
+    .wrap{max-width:var(--maxw); margin:0 auto; padding:24px}
+    header{display:flex; align-items:center; justify-content:space-between; gap:16px}
+    .brand{display:flex; align-items:center; gap:14px}
+    .brand img{height:46px; width:auto; filter: drop-shadow(0 2px 0 rgba(0,0,0,.25));}
+    .badge{font-weight:600; font-size:12px; letter-spacing:.03em; color:#111; background:var(--wlm-yellow); padding:6px 10px; border-radius:999px}
+    nav{display:flex; align-items:center; gap:12px}
+    .btn{appearance:none; border:0; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer}
+    .btn.primary{background:var(--wlm-yellow); color:#111}
+    .btn.ghost{background:transparent; color:var(--wlm-text); border:1px solid #2a2b2f}
+    .lang{background:#16181b; color:var(--wlm-text); border:1px solid #2a2b2f; border-radius:999px; padding:8px 12px}
+
+    .hero{display:grid; grid-template-columns:1.1fr .9fr; gap:28px; margin-top:36px}
+    .card{background:#121316; border:1px solid #1f2125; border-radius:var(--radius); padding:22px}
+    h1{font-size: clamp(28px, 4vw, 54px); line-height:1.04; margin:12px 0 8px}
+    p.lead{font-size: clamp(16px, 2.4vw, 20px); color:#cfd3da; margin: 0 0 18px}
+    .trust{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px}
+    .trust .chip{font-size:12px; color:#111; background:var(--wlm-yellow); padding:6px 10px; border-radius:999px}
+
+    .stripe{height:10px; background:repeating-linear-gradient(45deg, var(--wlm-yellow), var(--wlm-yellow) 14px, #000 14px, #000 28px); border-radius:10px; opacity:.8}
+
+    .section{margin-top:48px}
+    .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+    .feature{background:#0f1013; border:1px solid #1b1d21; border-radius:var(--radius); padding:18px}
+    .feature h3{margin:6px 0 8px}
+
+    .pricing{display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
+    .price-card{background:#0f1013; border:1px solid #1b1d21; border-radius:var(--radius); padding:22px; position:relative}
+    .price{font-size:36px; font-weight:800}
+    .note{font-size:12px; color:#9aa0a6}
+    ul{padding-left:18px}
+    li{margin:6px 0}
+
+    footer{border-top:1px solid #1b1d21; margin-top:48px; padding:20px 0; color:#a8acb3; font-size:13px}
+
+    /* responsiveness */
+    @media (max-width: 960px){
+      .hero{grid-template-columns:1fr}
+      .pricing{grid-template-columns:1fr}
+      .grid-3{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <picture>
+          <!-- If PNG isn't found, it will fallback to the JPEG. Adjust path as needed. -->
+          <source srcset="Logo/Logo-WLM.png" type="image/png">
+          <img src="Logo/Logo WLM.jpeg" alt="WLM – Web Legal Manager logo" />
+        </picture>
+        <span class="badge" data-i18n="brand">Web Legal Manager</span>
+      </div>
+      <nav>
+        <select class="lang" id="lang">
+          <option value="it">IT</option>
+          <option value="en">EN</option>
+        </select>
+        <button class="btn ghost" data-i18n="login">Accedi</button>
+        <button class="btn primary" data-i18n="cta">Inizia ora</button>
+      </nav>
+    </header>
+
+    <div class="section hero">
+      <div class="card">
+        <div class="stripe" aria-hidden="true"></div>
+        <h1 data-i18n="hero_title">Rimuoviamo ciò che non dovrebbe essere online.</h1>
+        <p class="lead" data-i18n="hero_sub">
+          Delisting rapido dai motori di ricerca e rimozione alla fonte quando possibile — con approvazione link in dashboard e delega legale digitale.
+        </p>
+        <div class="trust">
+          <div class="chip" data-i18n="chip1">Delisting veloce</div>
+          <div class="chip" data-i18n="chip2">Rimozione alla fonte</div>
+          <div class="chip" data-i18n="chip3">Privacy‑first</div>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap">
+          <button class="btn primary" data-i18n="cta">Inizia ora</button>
+          <button class="btn ghost" data-i18n="learn">Scopri come funziona</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 data-i18n="how_title">Come funziona</h3>
+        <ol style="margin:10px 0 0 18px; color:#cfd3da">
+          <li data-i18n="s1">Registrati e completa delega + documento.</li>
+          <li data-i18n="s2">Troviamo i contenuti (scansione manuale/assistita).</li>
+          <li data-i18n="s3">Approvi i link dalla dashboard.</li>
+          <li data-i18n="s4">Invio takedown → delisting o rimozione alla fonte.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 style="margin:0 0 12px" data-i18n="features_title">Perché scegliere WLM</h2>
+      <div class="grid-3">
+        <div class="feature">
+          <h3 data-i18n="f1_t">Delisting & Monitoraggio</h3>
+          <p data-i18n="f1_d">Pacchetti mensili con scansioni programmate e invii rapidi ai motori di ricerca.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="f2_t">Rimozione alla fonte</h3>
+          <p data-i18n="f2_d">Success fee trasparente quando il contenuto viene rimosso dal sito di origine.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="f3_t">Dashboard & Audit</h3>
+          <p data-i18n="f3_d">Approvi i link, segui gli stati (Found → Submitted → Removed) e scarichi report.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 style="margin:0 0 12px" data-i18n="pricing_title">Pricing</h2>
+      <div class="pricing">
+        <div class="price-card">
+          <div class="badge" style="position:absolute; top:16px; right:16px" data-i18n="starter">Starter</div>
+          <div class="price">€49<span class="note">/mo</span></div>
+          <p class="note" data-i18n="starter_tag">Per creator con pochi link al mese</p>
+          <ul>
+            <li data-i18n="starter_1">1 scansione/settimana</li>
+            <li data-i18n="starter_2">10 link inclusi/mese</li>
+            <li data-i18n="starter_3">Delisting Google/Bing incluso</li>
+            <li data-i18n="starter_4">Extra: €5/link</li>
+          </ul>
+          <button class="btn primary" style="margin-top:8px" data-i18n="choose">Scegli Starter</button>
+        </div>
+        <div class="price-card">
+          <div class="badge" style="position:absolute; top:16px; right:16px" data-i18n="pro">Pro</div>
+          <div class="price">€149<span class="note">/mo</span></div>
+          <p class="note" data-i18n="pro_tag">Per creator con volumi medi</p>
+          <ul>
+            <li data-i18n="pro_1">Scansioni giornaliere (manuali/assistite)</li>
+            <li data-i18n="pro_2">50 link inclusi/mese</li>
+            <li data-i18n="pro_3">Canali social & impersonation</li>
+            <li data-i18n="pro_4">Extra: €3/link</li>
+          </ul>
+          <button class="btn primary" style="margin-top:8px" data-i18n="choose">Scegli Pro</button>
+        </div>
+      </div>
+      <p class="note" style="margin-top:10px" data-i18n="success_note">Rimozione alla fonte: success fee aggiuntiva per link effettivamente rimossi all'origine.</p>
+    </div>
+
+    <footer class="wrap" style="padding-left:0; padding-right:0">
+      <div class="wrap" style="display:flex; gap:14px; justify-content:space-between; align-items:center">
+        <small>© <span id="year"></span> WLM – Web Legal Manager</small>
+        <small data-i18n="legal">Questo sito usa storage sicuro. Documenti d'identità e deleghe sono trattati secondo GDPR.</small>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Simple i18n (IT/EN) client-side
+    const i18n = {
+      it: {
+        brand: 'Web Legal Manager',
+        login: 'Accedi', cta: 'Inizia ora', learn:'Scopri come funziona',
+        hero_title: 'Rimuoviamo ciò che non dovrebbe essere online.',
+        hero_sub: 'Delisting rapido dai motori di ricerca e rimozione alla fonte quando possibile — con approvazione link in dashboard e delega legale digitale.',
+        chip1:'Delisting veloce', chip2:'Rimozione alla fonte', chip3:'Privacy‑first',
+        how_title:'Come funziona', s1:'Registrati e completa delega + documento.', s2:'Troviamo i contenuti (scansione manuale/assistita).', s3:'Approvi i link dalla dashboard.', s4:'Invio takedown → delisting o rimozione alla fonte.',
+        features_title:'Perché scegliere WLM', f1_t:'Delisting & Monitoraggio', f1_d:'Pacchetti mensili con scansioni programmate e invii rapidi ai motori di ricerca.', f2_t:'Rimozione alla fonte', f2_d:'Success fee trasparente quando il contenuto viene rimosso dal sito di origine.', f3_t:'Dashboard & Audit', f3_d:'Approvi i link, segui gli stati (Found → Submitted → Removed) e scarichi report.',
+        pricing_title:'Pricing', starter:'Starter', starter_tag:'Per creator con pochi link al mese', starter_1:'1 scansione/settimana', starter_2:'10 link inclusi/mese', starter_3:'Delisting Google/Bing incluso', starter_4:'Extra: €5/link',
+        pro:'Pro', pro_tag:'Per creator con volumi medi', pro_1:'Scansioni giornaliere (manuali/assistite)', pro_2:'50 link inclusi/mese', pro_3:'Canali social & impersonation', pro_4:'Extra: €3/link',
+        choose:'Scegli', success_note:'Rimozione alla fonte: success fee aggiuntiva per link effettivamente rimossi all\'origine.',
+        legal:"Questo sito usa storage sicuro. Documenti d'identità e deleghe sono trattati secondo GDPR."
+      },
+      en: {
+        brand: 'Web Legal Manager',
+        login: 'Log in', cta: 'Get protected', learn:'How it works',
+        hero_title: 'We remove what shouldn’t be online.',
+        hero_sub: 'Fast search delisting and source removal when possible — approve links in your dashboard with digital mandate.',
+        chip1:'Fast delisting', chip2:'Source removal', chip3:'Privacy‑first',
+        how_title:'How it works', s1:'Sign up and complete mandate + ID.', s2:'We find the content (manual/assisted scans).', s3:'You approve links from the dashboard.', s4:'We submit takedowns → delisted or removed at source.',
+        features_title:'Why WLM', f1_t:'Delisting & Monitoring', f1_d:'Monthly packages with scheduled scans and fast search removals.', f2_t:'Source removal', f2_d:'Transparent success fee when content is removed at the origin site.', f3_t:'Dashboard & Audit', f3_d:'Approve links, track states (Found → Submitted → Removed), download reports.',
+        pricing_title:'Pricing', starter:'Starter', starter_tag:'For creators with few links per month', starter_1:'1 scan/week', starter_2:'10 links included / month', starter_3:'Google/Bing delisting included', starter_4:'Overage: €5/link',
+        pro:'Pro', pro_tag:'For medium volume', pro_1:'Daily scans (manual/assisted)', pro_2:'50 links included / month', pro_3:'Social & impersonation channels', pro_4:'Overage: €3/link',
+        choose:'Choose', success_note:'Source removal: additional success fee for links actually removed at origin.',
+        legal:'This site uses secure storage. IDs and mandates are processed under GDPR.'
+      }
+    };
+    const els = [...document.querySelectorAll('[data-i18n]')];
+    const select = document.getElementById('lang');
+    function apply(lang){ els.forEach(e=>{ const k = e.dataset.i18n; if(i18n[lang][k]) e.textContent = i18n[lang][k]; }); }
+    select.addEventListener('change', e=> apply(e.target.value));
+    apply('it');
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

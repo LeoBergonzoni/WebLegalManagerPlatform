@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply min-h-screen bg-wlm-body text-wlm-text font-sans antialiased;
+}
+
+.stripe {
+  background-image: repeating-linear-gradient(45deg, #ffe94d, #ffe94d 14px, #000 14px, #000 28px);
+}
