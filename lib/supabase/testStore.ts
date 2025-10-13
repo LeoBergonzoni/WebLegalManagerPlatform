@@ -1,3 +1,5 @@
+import {cookies} from 'next/headers';
+
 type TableName = 'users' | 'identities' | 'findings' | 'takedowns';
 
 type TestUser = {
@@ -43,13 +45,19 @@ type TakedownRow = {
   created_at: string;
 };
 
+type RowMap = {
+  users: UserRow;
+  identities: IdentityRow;
+  findings: FindingRow;
+  takedowns: TakedownRow;
+};
+
+type RowsOf<T extends TableName> = RowMap[T][];
+
 type TestStore = {
   authUser: TestUser;
   tables: {
-    users: UserRow[];
-    identities: IdentityRow[];
-    findings: FindingRow[];
-    takedowns: TakedownRow[];
+    [K in TableName]: RowsOf<K>;
   };
   counters: Record<TableName, number>;
 };
@@ -132,56 +140,69 @@ function generateId(table: TableName, store: TestStore) {
   return `${table}-${store.counters[table]}`;
 }
 
-type FilterFn = (row: any) => boolean;
+function getRows<T extends TableName>(table: T, store: TestStore): RowsOf<T> {
+  return store.tables[table] as RowsOf<T>;
+}
 
-type ModifyBuilder = {
-  eq(column: string, value: any): ModifyBuilder;
-  then<TResult = unknown>(
-    onfulfilled?: ((value: {data: any[]; error: null}) => TResult | Promise<TResult>) | undefined | null,
-    onrejected?: ((reason: any) => TResult | Promise<TResult>) | undefined | null
-  ): Promise<TResult>;
-  catch: (...args: any[]) => ModifyBuilder;
+type FilterFn<T extends TableName> = (row: RowMap[T]) => boolean;
+
+type OrderConfig<T extends TableName> = {
+  column: keyof RowMap[T];
+  ascending: boolean;
 };
 
-type SelectBuilder = {
-  eq(column: string, value: any): SelectBuilder;
-  order(column: string, options: {ascending?: boolean}): SelectBuilder;
-  limit(count: number): SelectBuilder;
-  single(): Promise<{data: any | null; error: {message: string} | null}>;
-  maybeSingle(): Promise<{data: any | null; error: null}>;
+type SelectBuilder<T extends TableName> = {
+  eq<K extends keyof RowMap[T]>(column: K, value: RowMap[T][K]): SelectBuilder<T>;
+  order<K extends keyof RowMap[T]>(column: K, options: {ascending?: boolean}): SelectBuilder<T>;
+  limit(count: number): SelectBuilder<T>;
+  single(): Promise<{data: RowMap[T] | null; error: {message: string} | null}>;
+  maybeSingle(): Promise<{data: RowMap[T] | null; error: null}>;
   then<TResult = unknown>(
-    onfulfilled?: ((value: {data: any[]; error: null}) => TResult | Promise<TResult>) | undefined | null,
+    onfulfilled?: ((value: {data: RowsOf<T>; error: null}) => TResult | Promise<TResult>) | undefined | null,
     onrejected?: ((reason: any) => TResult | Promise<TResult>) | undefined | null
   ): Promise<TResult>;
-  catch: (...args: any[]) => SelectBuilder;
+  catch: (...args: any[]) => SelectBuilder<T>;
 };
 
-function createSelectBuilder(
-  table: TableName,
+type ModifyBuilder<T extends TableName> = {
+  eq<K extends keyof RowMap[T]>(column: K, value: RowMap[T][K]): ModifyBuilder<T>;
+  then<TResult = unknown>(
+    onfulfilled?: ((value: {data: RowsOf<T>; error: null}) => TResult | Promise<TResult>) | undefined | null,
+    onrejected?: ((reason: any) => TResult | Promise<TResult>) | undefined | null
+  ): Promise<TResult>;
+  catch: (...args: any[]) => ModifyBuilder<T>;
+};
+
+function createSelectBuilder<T extends TableName>(
+  table: T,
   store: TestStore,
-  initialFilters: FilterFn[] = []
-): SelectBuilder {
+  initialFilters: FilterFn<T>[] = []
+): SelectBuilder<T> {
   let filters = [...initialFilters];
-  let orderConfig: {column: string; ascending: boolean} | null = null;
+  let orderConfig: OrderConfig<T> | null = null;
   let limitCount: number | null = null;
 
-  const apply = () => {
-    let rows = store.tables[table];
+  const apply = (): RowsOf<T> => {
+    let rows = [...getRows(table, store)];
     rows = rows.filter((row) => filters.every((fn) => fn(row)));
     if (orderConfig) {
       const {column, ascending} = orderConfig;
       rows = [...rows].sort((a, b) => {
-        if (a[column] === b[column]) return 0;
-        return a[column] > b[column] ? (ascending ? 1 : -1) : ascending ? -1 : 1;
+        const aValue = a[column];
+        const bValue = b[column];
+        if (aValue === bValue) return 0;
+        const aComparable = String(aValue ?? '');
+        const bComparable = String(bValue ?? '');
+        return aComparable > bComparable ? (ascending ? 1 : -1) : ascending ? -1 : 1;
       });
     }
     if (limitCount != null) {
       rows = rows.slice(0, limitCount);
     }
-    return rows.map((row) => clone(row));
+    return rows.map((row) => clone(row)) as RowsOf<T>;
   };
 
-  const builder: SelectBuilder = {
+  const builder: SelectBuilder<T> = {
     eq(column, value) {
       filters.push((row) => row[column] === value);
       return builder;
@@ -196,7 +217,7 @@ function createSelectBuilder(
     },
     async single() {
       const rows = apply();
-      const row = rows[0];
+      const row = rows[0] ?? null;
       return row
         ? {data: row, error: null}
         : {data: null, error: {message: 'No rows'}};
@@ -225,23 +246,23 @@ function createSelectBuilder(
   return builder;
 }
 
-function createModifyBuilder(
-  table: TableName,
+function createModifyBuilder<T extends TableName>(
+  table: T,
   store: TestStore,
-  values: Record<string, any>
-): ModifyBuilder {
-  let filters: FilterFn[] = [];
+  values: Partial<RowMap[T]>
+): ModifyBuilder<T> {
+  const filters: FilterFn<T>[] = [];
 
-  const execute = () => {
-    const rows = store.tables[table];
+  const execute = (): RowsOf<T> => {
+    const rows = getRows(table, store);
     const matches = rows.filter((row) => filters.every((fn) => fn(row)));
     matches.forEach((row) => {
       Object.assign(row, values);
     });
-    return matches.map((row) => clone(row));
+    return matches.map((row) => clone(row)) as RowsOf<T>;
   };
 
-  const builder: ModifyBuilder = {
+  const builder: ModifyBuilder<T> = {
     eq(column, value) {
       filters.push((row) => row[column] === value);
       return builder;
@@ -265,53 +286,62 @@ function createModifyBuilder(
   return builder;
 }
 
-function tableApi(table: TableName, store: TestStore) {
+function tableApi<T extends TableName>(table: T, store: TestStore) {
   return {
     select: () => createSelectBuilder(table, store),
-    insert: async (values: any) => {
+    insert: async (values: Partial<RowMap[T]> | Array<Partial<RowMap[T]>>) => {
       const items = Array.isArray(values) ? values : [values];
+      const rows = getRows(table, store);
       const inserted = items.map((item) => {
-        const record = {...item};
+        const record = {...(item as RowMap[T])};
         if (!record.id) {
-          record.id = generateId(table, store);
+          (record as RowMap[T] & {id: string}).id = generateId(table, store);
         }
-        if (!record.created_at) {
-          record.created_at = new Date().toISOString();
+        if (!('created_at' in record) || !record.created_at) {
+          (record as RowMap[T] & {created_at: string}).created_at = new Date().toISOString();
         }
-        store.tables[table].push(record);
-        return clone(record);
+        rows.push(record);
+        return clone(record) as RowMap[T];
       });
-      return {data: inserted, error: null};
+      return {data: inserted as RowsOf<T>, error: null};
     },
-    upsert: async (values: any, options?: {onConflict?: string}) => {
+    upsert: async (values: Partial<RowMap[T]> | Array<Partial<RowMap[T]>>, options?: {onConflict?: keyof RowMap[T]}) => {
       const items = Array.isArray(values) ? values : [values];
-      const updated: any[] = [];
+      const rows = getRows(table, store);
+      const updated: RowsOf<T> = [];
       const conflictKey = options?.onConflict;
+
       items.forEach((item) => {
-        if (conflictKey) {
-          const existing = store.tables[table].find((row: any) => row[conflictKey] === item[conflictKey]);
+        const incoming = {...(item as RowMap[T])};
+        const key = conflictKey ? incoming[conflictKey] : undefined;
+        if (conflictKey && key != null) {
+          const existing = rows.find((row) => row[conflictKey] === key);
           if (existing) {
-            Object.assign(existing, item);
+            Object.assign(existing, incoming);
             if (!existing.id) {
-              existing.id = generateId(table, store);
+              (existing as RowMap[T] & {id: string}).id = generateId(table, store);
             }
-            updated.push(clone(existing));
+            if (!('created_at' in existing) || !existing.created_at) {
+              (existing as RowMap[T] & {created_at: string}).created_at = new Date().toISOString();
+            }
+            updated.push(clone(existing) as RowMap[T]);
             return;
           }
         }
-        const record = {...item};
-        if (!record.id) {
-          record.id = generateId(table, store);
+
+        if (!incoming.id) {
+          (incoming as RowMap[T] & {id: string}).id = generateId(table, store);
         }
-        if (!record.created_at) {
-          record.created_at = new Date().toISOString();
+        if (!('created_at' in incoming) || !incoming.created_at) {
+          (incoming as RowMap[T] & {created_at: string}).created_at = new Date().toISOString();
         }
-        store.tables[table].push(record);
-        updated.push(clone(record));
+        rows.push(incoming);
+        updated.push(clone(incoming) as RowMap[T]);
       });
+
       return {data: updated, error: null};
     },
-    update: (values: any) => createModifyBuilder(table, store, values)
+    update: (values: Partial<RowMap[T]>) => createModifyBuilder(table, store, values)
   };
 }
 
@@ -344,7 +374,7 @@ export function createTestServerClient(getTestAuthCookie?: () => string | undefi
         return {data: {user: authUser ? clone(authUser) : null}, error: null};
       }
     },
-    from(tableName: TableName) {
+    from<T extends TableName>(tableName: T) {
       return tableApi(tableName, store);
     }
   } as any;
@@ -360,7 +390,7 @@ export function createTestBrowserClient() {
         return {data: {user: authUser ? clone(authUser) : null}, error: null};
       }
     },
-    from(tableName: TableName) {
+    from<T extends TableName>(tableName: T) {
       return tableApi(tableName, store);
     },
     storage: {
