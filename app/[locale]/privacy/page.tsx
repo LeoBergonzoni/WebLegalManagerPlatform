@@ -1,8 +1,16 @@
 import Link from 'next/link';
-import {getLocale, getTranslations} from 'next-intl/server';
+import {getTranslations} from 'next-intl/server';
 
-export default async function PrivacyPage() {
-  const [locale, t] = await Promise.all([getLocale(), getTranslations()]);
+type Params = {
+  params: {locale: 'it' | 'en'};
+};
+
+export function generateStaticParams() {
+  return [{locale: 'it'}, {locale: 'en'}];
+}
+
+export default async function PrivacyPage({params: {locale}}: Params) {
+  const t = await getTranslations({locale});
 
   return (
     <div className="mx-auto flex min-h-screen max-w-wlm flex-col px-6 py-10 text-wlm-text">

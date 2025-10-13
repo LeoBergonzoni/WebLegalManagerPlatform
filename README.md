@@ -13,6 +13,11 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
   - Add environment variable `NEXT_PUBLIC_SITE_URL` with the production domain (used for sitemap generation).
   - Optionally run `npm run sitemap` post-build to refresh XML sitemaps.
 
+## i18n & Routing
+
+- Translations live in `messages/it.json` and `messages/en.json`. Add new keys to both files and consume them with `useTranslations('namespace')` or plain `useTranslations()` in components.
+- The middleware (`middleware.ts`) forces locale-prefixed routes, so `/it/...` and `/en/...` are automatically resolved and non-prefixed requests redirect to the default Italian locale.
+
 ## Roadmap
 
 - **MVP**
