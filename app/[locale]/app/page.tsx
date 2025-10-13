@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import {redirect} from 'next/navigation';
 import {getTranslations} from 'next-intl/server';
+import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 type Params = {
   params: {locale: 'it' | 'en'};
@@ -10,6 +12,41 @@ export function generateStaticParams() {
 }
 
 export default async function AppDashboardPlaceholder({params: {locale}}: Params) {
+  const supabase = createServerSupabaseClient();
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+  let userName: string | null = null;
+
+  try {
+    const {
+      data: {user}
+    } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+      userEmail = user.email ?? null;
+      userName = (user.user_metadata?.full_name as string | null) ?? null;
+    }
+  } catch {
+    userId = null;
+  }
+
+  if (!userId) {
+    redirect(`/${locale}/auth/sign-in`);
+  }
+
+  if (userId && userEmail) {
+    await supabase
+      .from('users')
+      .upsert(
+        {
+          auth_user_id: userId,
+          email: userEmail,
+          name: userName
+        },
+        {onConflict: 'auth_user_id'}
+      );
+  }
+
   const t = await getTranslations({locale});
 
   return (
