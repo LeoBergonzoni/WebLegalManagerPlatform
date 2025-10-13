@@ -19,6 +19,19 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
 - Duplicate `.env.example` to `.env.local`, then paste:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Optional admin helpers: set `ADMIN_EMAILS` to a comma-separated list of operator emails (enables manual verification button in `/app/identity`).
+- In Supabase Storage, create a bucket named `ids` (standard bucket). Add a policy so authenticated users can upload and read their own files, for example:
+  ```sql
+  create policy "Allow authenticated uploads" on storage.objects
+    for insert with check (
+      bucket_id = 'ids' and auth.uid() = owner
+    );
+
+  create policy "Allow authenticated read" on storage.objects
+    for select using (
+      bucket_id = 'ids' and auth.uid() = owner
+    );
+  ```
 - In Netlify, add the same variables under Site Settings → Build & deploy → Environment so production builds can reach Supabase.
 - Run the SQL in `supabase/migrations/001_init.sql` once via the Supabase SQL editor or CLI to create tables and RLS policies.
 - After deploying, visit `/{locale}/admin/migrations` (e.g. `/it/admin/migrations`) to review migrations and confirm they have been executed.

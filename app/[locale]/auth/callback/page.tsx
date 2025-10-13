@@ -8,6 +8,10 @@ type PageProps = {
 
 export default async function AuthCallbackPage({params: {locale}, searchParams}: PageProps) {
   const supabase = createServerSupabaseClient();
+  if (!supabase) {
+    redirect(`/${locale}/auth/sign-in`);
+    return null;
+  }
   const code = searchParams.code;
 
   if (code) {

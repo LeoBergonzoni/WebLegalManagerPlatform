@@ -56,21 +56,21 @@ alter table public.takedowns enable row level security;
 
 -- Policies: each user can see/modify only their own rows
 create policy "users_self" on public.users
-  for select using (auth.uid() = auth_user_id)
+  for all using (auth.uid() = auth_user_id)
   with check (auth.uid() = auth_user_id);
 
 create policy "identities_by_user" on public.identities
-  for select using (exists(select 1 from public.users u where u.id = identities.user_id and u.auth_user_id = auth.uid()))
+  for all using (exists(select 1 from public.users u where u.id = identities.user_id and u.auth_user_id = auth.uid()))
   with check (exists(select 1 from public.users u where u.id = identities.user_id and u.auth_user_id = auth.uid()));
 
 create policy "mandates_by_user" on public.mandates
-  for select using (exists(select 1 from public.users u where u.id = mandates.user_id and u.auth_user_id = auth.uid()))
+  for all using (exists(select 1 from public.users u where u.id = mandates.user_id and u.auth_user_id = auth.uid()))
   with check (exists(select 1 from public.users u where u.id = mandates.user_id and u.auth_user_id = auth.uid()));
 
 create policy "findings_by_user" on public.findings
-  for select using (exists(select 1 from public.users u where u.id = findings.user_id and u.auth_user_id = auth.uid()))
+  for all using (exists(select 1 from public.users u where u.id = findings.user_id and u.auth_user_id = auth.uid()))
   with check (exists(select 1 from public.users u where u.id = findings.user_id and u.auth_user_id = auth.uid()));
 
 create policy "takedowns_by_user" on public.takedowns
-  for select using (exists(select 1 from public.users u where u.id = takedowns.user_id and u.auth_user_id = auth.uid()))
+  for all using (exists(select 1 from public.users u where u.id = takedowns.user_id and u.auth_user_id = auth.uid()))
   with check (exists(select 1 from public.users u where u.id = takedowns.user_id and u.auth_user_id = auth.uid()));

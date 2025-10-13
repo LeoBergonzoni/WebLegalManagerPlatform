@@ -1,6 +1,6 @@
 'use client';
 
-import {FormEvent, useMemo, useState} from 'react';
+import {FormEvent, useEffect, useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {supabaseBrowserClient} from '@/lib/supabase/client';
@@ -11,9 +11,22 @@ type SignInFormProps = {
 
 export default function SignInForm({locale}: SignInFormProps) {
   const router = useRouter();
-  const supabase = useMemo(() => supabaseBrowserClient(), []);
+  const [supabase, setSupabase] = useState<ReturnType<typeof supabaseBrowserClient>>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [notConfigured, setNotConfigured] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    const client = supabaseBrowserClient();
+    if (!client) {
+      setNotConfigured(true);
+      return;
+    }
+
+    setSupabase(client);
+    setInitialized(true);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,6 +41,12 @@ export default function SignInForm({locale}: SignInFormProps) {
 
     setLoading(true);
     setErrorMessage(null);
+
+    if (!supabase) {
+      setErrorMessage('Supabase is not configured.');
+      setLoading(false);
+      return;
+    }
 
     const {data, error} = await supabase.auth.signInWithPassword({
       email,
@@ -57,6 +76,22 @@ export default function SignInForm({locale}: SignInFormProps) {
     router.replace(`/${locale}/app`);
     router.refresh();
   };
+
+  if (notConfigured) {
+    return (
+      <div className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-4 text-sm text-[#cfd3da]">
+        Supabase is not configured. Please add the required environment variables.
+      </div>
+    );
+  }
+
+  if (!initialized || !supabase) {
+    return (
+      <div className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-4 text-sm text-[#cfd3da]">
+        Loading authentication form…
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
