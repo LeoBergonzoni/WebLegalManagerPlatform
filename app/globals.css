@@ -3,11 +3,24 @@
 @tailwind utilities;
 
 :root {
+  --wlm-yellow: #ffe94d;
+  --wlm-black: #0b0b0b;
+  --wlm-text: #ededed;
   color-scheme: dark;
 }
 
+html,
 body {
-  @apply min-h-screen bg-wlm-body text-wlm-text font-sans antialiased;
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(255, 233, 77, 0.18), transparent 55%),
+    linear-gradient(180deg, #0b0b0b 0%, #111213 100%);
+  color: var(--wlm-text);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  @apply antialiased;
 }
 
 .stripe {
