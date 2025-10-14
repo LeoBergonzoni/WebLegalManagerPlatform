@@ -77,8 +77,9 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
   if (targetUserId !== profile.id) {
     const {data: otherProfile} = await supabase
       .from('users')
-      .select<UserProfileRow>('id, auth_user_id, email, name')
+      .select('id, auth_user_id, email, name')
       .eq('id', targetUserId)
+      .returns<UserProfileRow[]>()
       .maybeSingle();
     if (otherProfile) {
       targetProfile = otherProfile;

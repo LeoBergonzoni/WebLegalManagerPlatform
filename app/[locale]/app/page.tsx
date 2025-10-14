@@ -249,10 +249,11 @@ async function LatestFindingsSection({profileId, locale}: {profileId: string; lo
 
   const {data: findings} = await supabase
     .from('findings')
-    .select<DashboardFinding>('id, url, source_type, status, created_at')
+    .select('id, url, source_type, status, created_at')
     .eq('user_id', profileId)
     .order('created_at', {ascending: false})
-    .limit(10);
+    .limit(10)
+    .returns<DashboardFinding[]>();
 
   if (!findings || findings.length === 0) {
     return (

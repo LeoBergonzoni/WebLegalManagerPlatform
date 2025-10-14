@@ -7,31 +7,23 @@ type AdminUserRow = {
   id: string;
   email: string | null;
   name: string | null;
-  findings: {status: string | null}[];
+  findings: {status: 'Found' | 'Pending' | 'Submitted' | 'Removed'}[] | null;
 };
 
-const statusOrder: Array<'Found' | 'Pending' | 'Submitted' | 'Removed' | 'Rejected'> = [
-  'Found',
-  'Pending',
-  'Submitted',
-  'Removed',
-  'Rejected'
-];
+const statusOrder: Array<'Found' | 'Pending' | 'Submitted' | 'Removed'> = ['Found', 'Pending', 'Submitted', 'Removed'];
 
 const statusLabels: Record<string, string> = {
   Found: 'Found',
   Pending: 'Pending',
   Submitted: 'Submitted',
-  Removed: 'Removed',
-  Rejected: 'Rejected'
+  Removed: 'Removed'
 };
 
 const statusColors: Record<string, string> = {
   Found: 'text-slate-200',
   Pending: 'text-amber-200',
   Submitted: 'text-blue-200',
-  Removed: 'text-emerald-200',
-  Rejected: 'text-red-200'
+  Removed: 'text-emerald-200'
 };
 
 type PageProps = {
@@ -83,7 +75,8 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
 
   const {data: users, error} = await supabase
     .from('users')
-    .select<AdminUserRow>('id, email, name, findings:findings(status)')
+    .select('id, email, name, findings:findings(status)')
+    .returns<AdminUserRow[]>()
     .order('created_at', {ascending: false});
 
   if (error) {
@@ -97,7 +90,9 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     );
   }
 
-  const summaries = (users ?? []).map((row) => {
+  const safeUsers = users ?? [];
+
+  const summaries = safeUsers.map((row) => {
     const stats = row.findings ?? [];
     const counts = stats.reduce(
       (acc, item) => {
@@ -106,7 +101,7 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
         acc.total += 1;
         return acc;
       },
-      {Found: 0, Pending: 0, Submitted: 0, Removed: 0, Rejected: 0, total: 0} as Record<string, number>
+      {Found: 0, Pending: 0, Submitted: 0, Removed: 0, total: 0} as Record<string, number>
     );
     return {
       id: row.id,

@@ -29,10 +29,9 @@ export async function ensureUserProfile({
 
   const {data: existing, error: existingError} = await supabase
     .from('users')
-    .select<UserProfileRow>(
-      'id, auth_user_id, email, name, stripe_customer_id, stripe_subscription_id, created_at'
-    )
+    .select('id, auth_user_id, email, name, stripe_customer_id, stripe_subscription_id, created_at')
     .eq('auth_user_id', authUser.id)
+    .returns<UserProfileRow[]>()
     .maybeSingle();
 
   if (existing) {
@@ -61,10 +60,9 @@ export async function ensureUserProfile({
 
   const {data: created, error: fetchError} = await supabase
     .from('users')
-    .select<UserProfileRow>(
-      'id, auth_user_id, email, name, stripe_customer_id, stripe_subscription_id, created_at'
-    )
+    .select('id, auth_user_id, email, name, stripe_customer_id, stripe_subscription_id, created_at')
     .eq('auth_user_id', authUser.id)
+    .returns<UserProfileRow[]>()
     .single();
 
   if (fetchError) {
