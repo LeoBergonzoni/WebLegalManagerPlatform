@@ -30,8 +30,7 @@ const docTypeOptions = [
 export default function IdentityClient({authUserId, profileId, identity}: IdentityClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowserClient(), []);
-  const [notConfigured, setNotConfigured] = useState(false);
-
+  const [storageUnavailable, setStorageUnavailable] = useState(() => !supabase);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [docType, setDocType] = useState<string>(identity?.doc_type ?? 'passport');
@@ -41,8 +40,27 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
 
   useEffect(() => {
     if (!supabase) {
-      setNotConfigured(true);
+      setStorageUnavailable(true);
+      return;
     }
+
+    let cancelled = false;
+    async function verifyBucket() {
+      const {error: bucketError} = await supabase.storage.from('ids').list('', {limit: 1});
+      if (cancelled) {
+        return;
+      }
+      if (bucketError) {
+        setStorageUnavailable(true);
+      } else {
+        setStorageUnavailable(false);
+      }
+    }
+
+    verifyBucket();
+    return () => {
+      cancelled = true;
+    };
   }, [supabase]);
 
   useEffect(() => {
@@ -98,7 +116,8 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
     resetMessages();
 
     if (!supabase) {
-      setError('Supabase is not configured. Please contact support.');
+      setStorageUnavailable(true);
+      setError('Storage not configured. Please contact support.');
       return;
     }
 
@@ -107,10 +126,15 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       return;
     }
 
+    if (storageUnavailable) {
+      setError('Storage not configured. Please contact support.');
+      return;
+    }
+
     setUploading(true);
 
     const fileNameSafe = file.name.replace(/\s+/g, '-');
-    const objectPath = `ids/${authUserId}/${Date.now()}-${fileNameSafe}`;
+    const objectPath = `${authUserId}/${Date.now()}-${fileNameSafe}`;
 
     const {error: uploadError} = await supabase.storage
       .from('ids')
@@ -121,7 +145,19 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       });
 
     if (uploadError) {
-      setError(`Upload failed: ${uploadError.message}`);
+      const statusCode = (uploadError as {statusCode?: number}).statusCode ?? null;
+      const messageLower = uploadError.message.toLowerCase();
+      const misconfigured =
+        (statusCode && [401, 403, 404].includes(statusCode)) ||
+        messageLower.includes('bucket not found') ||
+        messageLower.includes('not authorized');
+
+      if (misconfigured) {
+        setStorageUnavailable(true);
+        setError('Storage not configured. Please contact support.');
+      } else {
+        setError(`Upload failed: ${uploadError.message}`);
+      }
       setUploading(false);
       return;
     }
@@ -163,16 +199,13 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
     router.refresh();
   };
 
-  if (notConfigured) {
-    return (
-      <div className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-4 text-sm text-[#cfd3da]">
-        Supabase storage is not configured. Please add the required environment variables and bucket.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {storageUnavailable ? (
+        <div className="rounded-[18px] border border-amber-500/30 bg-amber-500/10 p-3 text-sm font-semibold text-amber-200">
+          Storage not configured
+        </div>
+      ) : null}
       <div>
         <label className="block text-sm font-semibold text-[var(--wlm-text)]">Document type</label>
         <select
@@ -245,7 +278,7 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       <button
         type="button"
         onClick={handleUpload}
-        disabled={uploading}
+        disabled={uploading || storageUnavailable}
         className="w-full rounded-full bg-[var(--wlm-yellow)] px-4 py-2 text-sm font-semibold text-[#111] transition hover:bg-[#ffd600] disabled:opacity-60"
       >
         {uploading ? 'Saving…' : 'Save'}

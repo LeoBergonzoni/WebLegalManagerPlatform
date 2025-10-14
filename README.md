@@ -21,17 +21,19 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY` (required by Stripe webhooks to update billing fields)
   - `ADMIN_EMAILS` (optional list enabling manual verification button in `/app/identity`).
-- In Supabase Storage, create a bucket named `ids` (standard bucket). Add a policy so authenticated users can upload and read their own files, for example:
+- In Supabase Storage, create a bucket named `ids` (standard bucket). Add the following row-level security policies so authenticated users can manage only their own files:
   ```sql
-  create policy "Allow authenticated uploads" on storage.objects
-    for insert with check (
-      bucket_id = 'ids' and auth.uid() = owner
-    );
+  create policy if not exists "ids_upload_own"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'ids' and (storage.foldername(name))[1] = auth.uid()::text);
 
-  create policy "Allow authenticated read" on storage.objects
-    for select using (
-      bucket_id = 'ids' and auth.uid() = owner
-    );
+  create policy if not exists "ids_read_own"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'ids' and (storage.foldername(name))[1] = auth.uid()::text);
+
+  create policy if not exists "ids_delete_own"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'ids' and (storage.foldername(name))[1] = auth.uid()::text);
   ```
 - In Netlify, add the same variables under Site Settings → Build & deploy → Environment so production builds can reach Supabase.
 - Run the SQL in `supabase/migrations/001_init.sql` once via the Supabase SQL editor or CLI to create tables and RLS policies.

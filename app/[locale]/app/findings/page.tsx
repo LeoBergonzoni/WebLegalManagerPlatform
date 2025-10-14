@@ -2,14 +2,29 @@ import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
 import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
 import FindingsListClient from './FindingsListClient';
-
-export const dynamic = 'force-dynamic';
+import {ensureUserProfile, type UserProfileRow} from '@/lib/users/ensureUserProfile';
 
 type PageProps = {
   params: {locale: 'it' | 'en'};
+  searchParams?: {status?: string; page?: string; user?: string};
 };
 
-export default async function FindingsPage({params: {locale}}: PageProps) {
+const PAGE_SIZE = 10;
+const STATUS_FILTERS = ['All', 'Found', 'Pending', 'Submitted', 'Removed', 'Rejected'] as const;
+
+export const dynamic = 'force-dynamic';
+
+function parseStatusFilter(raw: string | undefined) {
+  if (!raw) return 'All';
+  return STATUS_FILTERS.includes(raw as (typeof STATUS_FILTERS)[number]) ? raw : 'All';
+}
+
+function parsePage(raw: string | undefined) {
+  const page = Number(raw);
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+}
+
+export default async function FindingsPage({params: {locale}, searchParams}: PageProps) {
   if (!isSupabaseConfigured) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12 text-[var(--wlm-text)]">
@@ -34,28 +49,59 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const {data: profile, error: profileError} = await supabase
-    .from('users')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .single();
+  const profile = await ensureUserProfile({supabase, authUser: user});
 
-  if (profileError || !profile) {
+  if (!profile) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12 text-[var(--wlm-text)]">
         <h1 className="text-3xl font-extrabold">Findings</h1>
-        <p className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-red-300">
-          Unable to load your account profile. Please try again later.
+        <p className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-[#cfd3da]">
+          We&apos;re preparing your account profile. Please refresh shortly or contact support if you continue to see
+          this message.
         </p>
       </div>
     );
   }
 
-  const {data: findings, error: findingsError} = await supabase
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = adminEmails.includes((user.email ?? '').toLowerCase());
+
+  const statusFilter = parseStatusFilter(searchParams?.status);
+  const page = parsePage(searchParams?.page);
+  const targetUserId = searchParams?.user && isAdmin ? searchParams.user : profile.id;
+
+  let targetProfile: UserProfileRow = profile;
+  if (targetUserId !== profile.id) {
+    const {data: otherProfile} = await supabase
+      .from('users')
+      .select<UserProfileRow>('id, auth_user_id, email, name')
+      .eq('id', targetUserId)
+      .maybeSingle();
+    if (otherProfile) {
+      targetProfile = otherProfile;
+    } else {
+      targetProfile = profile;
+    }
+  }
+
+  let query = supabase
     .from('findings')
-    .select('id, url, source_type, status, created_at')
-    .eq('user_id', profile.id)
-    .order('created_at', {ascending: false});
+    .select('id, url, source_type, status, created_at', {count: 'exact'})
+    .eq('user_id', targetProfile.id);
+
+  if (statusFilter !== 'All') {
+    query = query.eq('status', statusFilter);
+  }
+
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const {data: findings, count, error: findingsError} = await query
+    .order('created_at', {ascending: false})
+    .range(from, to);
 
   if (findingsError) {
     return (
@@ -71,8 +117,9 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
   async function approveFinding(formData: FormData) {
     'use server';
     const findingId = formData.get('finding_id');
-    if (typeof findingId !== 'string') {
-      throw new Error('Invalid finding identifier');
+    const targetUserIdFromForm = formData.get('user_id');
+    if (typeof findingId !== 'string' || typeof targetUserIdFromForm !== 'string') {
+      throw new Error('Invalid request');
     }
 
     const supabaseAction = createServerSupabaseClient();
@@ -88,21 +135,27 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
       throw new Error('Not authenticated');
     }
 
-    const {data: profileRow, error: profileErr} = await supabaseAction
-      .from('users')
-      .select('id')
-      .eq('auth_user_id', currentUser.id)
-      .single();
-
-    if (profileErr || !profileRow) {
+    const actingProfile = await ensureUserProfile({supabase: supabaseAction, authUser: currentUser});
+    if (!actingProfile) {
       throw new Error('Profile not found');
+    }
+
+    const adminList = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+    const canActOnAnyUser = adminList.includes((currentUser.email ?? '').toLowerCase());
+
+    const targetUserIdFinal = canActOnAnyUser ? targetUserIdFromForm : actingProfile.id;
+    if (!canActOnAnyUser && targetUserIdFromForm !== actingProfile.id) {
+      throw new Error('You are not allowed to update this finding');
     }
 
     const {error: updateError} = await supabaseAction
       .from('findings')
       .update({status: 'Pending'})
       .eq('id', findingId)
-      .eq('user_id', profileRow.id);
+      .eq('user_id', targetUserIdFinal);
 
     if (updateError) {
       throw new Error(updateError.message);
@@ -110,20 +163,20 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
 
     await supabaseAction.from('takedowns').insert({
       finding_id: findingId,
-      user_id: profileRow.id,
+      user_id: targetUserIdFinal,
       channel: 'search_form',
       submitted_at: new Date().toISOString()
     });
 
-    revalidatePath(`/${locale}/app/findings`);
-    revalidatePath(`/${locale}/app`);
+    revalidatePath(`/${locale}/app/findings?user=${targetUserIdFinal}`, 'page');
   }
 
   async function rejectFinding(formData: FormData) {
     'use server';
     const findingId = formData.get('finding_id');
-    if (typeof findingId !== 'string') {
-      throw new Error('Invalid finding identifier');
+    const targetUserIdFromForm = formData.get('user_id');
+    if (typeof findingId !== 'string' || typeof targetUserIdFromForm !== 'string') {
+      throw new Error('Invalid request');
     }
 
     const supabaseAction = createServerSupabaseClient();
@@ -139,38 +192,50 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
       throw new Error('Not authenticated');
     }
 
-    const {data: profileRow, error: profileErr} = await supabaseAction
-      .from('users')
-      .select('id')
-      .eq('auth_user_id', currentUser.id)
-      .single();
-
-    if (profileErr || !profileRow) {
+    const actingProfile = await ensureUserProfile({supabase: supabaseAction, authUser: currentUser});
+    if (!actingProfile) {
       throw new Error('Profile not found');
+    }
+
+    const adminList = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+    const canActOnAnyUser = adminList.includes((currentUser.email ?? '').toLowerCase());
+
+    const targetUserIdFinal = canActOnAnyUser ? targetUserIdFromForm : actingProfile.id;
+    if (!canActOnAnyUser && targetUserIdFromForm !== actingProfile.id) {
+      throw new Error('You are not allowed to update this finding');
     }
 
     const {error: updateError} = await supabaseAction
       .from('findings')
       .update({status: 'Rejected'})
       .eq('id', findingId)
-      .eq('user_id', profileRow.id);
+      .eq('user_id', targetUserIdFinal);
 
     if (updateError) {
       throw new Error(updateError.message);
     }
 
-    revalidatePath(`/${locale}/app/findings`);
-    revalidatePath(`/${locale}/app`);
+    revalidatePath(`/${locale}/app/findings?user=${targetUserIdFinal}`, 'page');
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12 text-[var(--wlm-text)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold">Findings</h1>
-          <p className="mt-2 text-sm text-[#cfd3da]">
-            Review each finding and approve the takedown process or reject when it does not require action.
-          </p>
+    <div className="space-y-6">
+      <div className="rounded-[24px] border border-[#1f2125] bg-[#121316] p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold text-[var(--wlm-text)]">Findings</h1>
+            <p className="mt-1 text-sm text-[#cfd3da]">
+              Review each finding and approve the takedown process or reject when it does not require action.
+            </p>
+          </div>
+          {isAdmin && targetProfile.id !== profile.id ? (
+            <span className="inline-flex items-center rounded-full border border-[#2a2b2f] bg-[#0f1013] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#9aa0a6]">
+              Viewing: {targetProfile.name ?? targetProfile.email}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -182,6 +247,13 @@ export default async function FindingsPage({params: {locale}}: PageProps) {
         locale={locale}
         approveAction={approveFinding}
         rejectAction={rejectFinding}
+        statusFilter={statusFilter}
+        statusOptions={Array.from(STATUS_FILTERS)}
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={count ?? 0}
+        targetUserId={targetProfile.id}
+        allowAdminFilters={isAdmin}
       />
     </div>
   );

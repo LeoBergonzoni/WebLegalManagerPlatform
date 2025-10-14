@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
-import IdentityClient from './IdentityClient';
 import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import IdentityClient from './IdentityClient';
+import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 type PageProps = {
   params: {locale: 'it' | 'en'};
@@ -55,27 +56,15 @@ export default async function IdentityPage({params: {locale}}: PageProps) {
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  if (user.email) {
-    await supabase
-      .from('users')
-      .upsert(
-        {auth_user_id: user.id, email: user.email, name: user.user_metadata?.full_name ?? null},
-        {onConflict: 'auth_user_id'}
-      );
-  }
+  const profile = await ensureUserProfile({supabase, authUser: user});
 
-  const {data: profile, error: profileError} = await supabase
-    .from('users')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  if (profileError || !profile) {
+  if (!profile) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-6 py-12 text-[var(--wlm-text)]">
         <h1 className="text-3xl font-extrabold">Identity document</h1>
-        <p className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-red-300">
-          Unable to load your account record. Please try again later or contact support.
+        <p className="rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-[#cfd3da]">
+          We&apos;re setting up your account profile. Please refresh the page in a moment or contact support if this
+          message remains.
         </p>
       </div>
     );

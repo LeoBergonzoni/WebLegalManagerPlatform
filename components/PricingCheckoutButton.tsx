@@ -1,16 +1,21 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState, type ReactNode} from 'react';
 
 type PricingCheckoutButtonProps = {
   plan: 'starter' | 'pro';
-  children: React.ReactNode;
+  children: ReactNode;
   disabled?: boolean;
 };
 
 export default function PricingCheckoutButton({plan, children, disabled}: PricingCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<string | undefined>(disabled ? 'Unable to start checkout' : undefined);
+
+  useEffect(() => {
+    setTooltip(disabled ? 'Unable to start checkout' : undefined);
+  }, [disabled]);
 
   const handleClick = async () => {
     if (disabled || loading) {
@@ -31,7 +36,14 @@ export default function PricingCheckoutButton({plan, children, disabled}: Pricin
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error ?? 'Unable to start checkout.');
+        if (response.status === 503 && data.reason === 'STRIPE_NOT_CONFIGURED') {
+          setError('Unable to start checkout');
+          setTooltip('Unable to start checkout');
+        } else {
+          const fallback = typeof data.error === 'string' ? data.error : 'Unable to start checkout';
+          setError(fallback);
+          setTooltip(fallback === 'Unable to start checkout' ? 'Unable to start checkout' : undefined);
+        }
         setLoading(false);
         return;
       }
@@ -56,7 +68,7 @@ export default function PricingCheckoutButton({plan, children, disabled}: Pricin
         onClick={handleClick}
         disabled={disabled || loading}
         className="inline-flex items-center justify-center rounded-full bg-[var(--wlm-yellow)] px-4 py-2 text-sm font-semibold text-[#111] transition hover:bg-[#ffd600] disabled:cursor-not-allowed disabled:opacity-60"
-        title={disabled ? 'Stripe checkout not configured' : undefined}
+        title={tooltip}
       >
         {loading ? 'Redirecting…' : children}
       </button>

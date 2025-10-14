@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import Stripe from 'stripe';
 import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripePublicKey = process.env.STRIPE_PUBLIC_KEY;
@@ -9,16 +10,12 @@ const priceStarter = process.env.STRIPE_PRICE_STARTER;
 const pricePro = process.env.STRIPE_PRICE_PRO;
 
 const stripeConfigPresent = Boolean(
-  stripeSecretKey &&
-  stripePublicKey &&
-  siteUrl &&
-  priceStarter &&
-  pricePro
+  stripeSecretKey && stripePublicKey && siteUrl && priceStarter && pricePro
 );
 
 export async function POST(request: NextRequest) {
   if (!stripeConfigPresent) {
-    return NextResponse.json({error: 'Stripe is not configured'}, {status: 400});
+    return NextResponse.json({ok: false, reason: 'STRIPE_NOT_CONFIGURED'}, {status: 503});
   }
 
   if (!isSupabaseConfigured) {
@@ -38,6 +35,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: 'Not authenticated'}, {status: 401});
   }
 
+  const profile = await ensureUserProfile({supabase, authUser: user});
+
+  if (!profile) {
+    return NextResponse.json({error: 'Unable to load profile'}, {status: 500});
+  }
+
   let payload: {plan?: string} = {};
   try {
     payload = await request.json();
@@ -51,16 +54,6 @@ export async function POST(request: NextRequest) {
   }
 
   const priceId = plan === 'starter' ? priceStarter! : pricePro!;
-
-  const {data: profile, error: profileError} = await supabase
-    .from('users')
-    .select('id, stripe_customer_id')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  if (profileError || !profile) {
-    return NextResponse.json({error: 'Unable to load profile'}, {status: 500});
-  }
 
   const stripe = new Stripe(stripeSecretKey!);
 
