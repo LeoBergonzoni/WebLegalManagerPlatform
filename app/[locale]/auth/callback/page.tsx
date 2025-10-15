@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {getServerSupabase} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 type PageProps = {
@@ -8,25 +8,37 @@ type PageProps = {
 };
 
 export default async function AuthCallbackPage({params: {locale}, searchParams}: PageProps) {
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
-    redirect(`/${locale}/auth/sign-in`);
-    return null;
+    console.error('[auth/callback] Supabase client is unavailable during callback');
+    redirect(`/${locale}/auth/sign-in?error=no_session`);
   }
+
   const code = searchParams.code;
 
-  if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
-  }
-
   try {
+    if (code) {
+      await supabase.auth.exchangeCodeForSession(code);
+    }
+
     const {
-      data: {user}
+      data: {user},
+      error: getUserError
     } = await supabase.auth.getUser();
 
-    await ensureUserProfile({supabase, authUser: user});
-  } catch {
-    // ignore errors during callback handling; user will retry sign-in if needed
+    if (!user) {
+      console.error('[auth/callback] No session after exchanging code', {
+        locale,
+        hasCode: Boolean(code),
+        error: getUserError?.message
+      });
+      redirect(`/${locale}/auth/sign-in?error=no_session`);
+    }
+
+    await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  } catch (error) {
+    console.error('[auth/callback] Failed to complete callback', error);
+    redirect(`/${locale}/auth/sign-in?error=no_session`);
   }
 
   redirect(`/${locale}/app`);

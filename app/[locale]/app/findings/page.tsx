@@ -1,6 +1,6 @@
 import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import FindingsListClient from './FindingsListClient';
 import {ensureUserProfile, type UserProfileRow} from '@/lib/users/ensureUserProfile';
 
@@ -36,7 +36,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     redirect(`/${locale}/auth/sign-in`);
   }
@@ -49,7 +49,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
 
   if (!profile) {
     return (
@@ -123,7 +123,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Invalid request');
     }
 
-    const supabaseAction = createServerSupabaseClient();
+    const supabaseAction = getServerSupabase();
     if (!supabaseAction) {
       throw new Error('Supabase not configured');
     }
@@ -136,7 +136,10 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Not authenticated');
     }
 
-    const actingProfile = await ensureUserProfile({supabase: supabaseAction, authUser: currentUser});
+    const actingProfile = await ensureUserProfile({
+      supabase: supabaseAction,
+      authUser: {id: currentUser.id, email: currentUser.email}
+    });
     if (!actingProfile) {
       throw new Error('Profile not found');
     }
@@ -180,7 +183,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Invalid request');
     }
 
-    const supabaseAction = createServerSupabaseClient();
+    const supabaseAction = getServerSupabase();
     if (!supabaseAction) {
       throw new Error('Supabase not configured');
     }
@@ -193,7 +196,10 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Not authenticated');
     }
 
-    const actingProfile = await ensureUserProfile({supabase: supabaseAction, authUser: currentUser});
+    const actingProfile = await ensureUserProfile({
+      supabase: supabaseAction,
+      authUser: {id: currentUser.id, email: currentUser.email}
+    });
     if (!actingProfile) {
       throw new Error('Profile not found');
     }

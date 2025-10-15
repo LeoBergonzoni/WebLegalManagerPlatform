@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import Stripe from 'stripe';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: 'Auth is not configured'}, {status: 400});
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     return NextResponse.json({error: 'Authentication not available'}, {status: 401});
   }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: 'Not authenticated'}, {status: 401});
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
 
   if (!profile) {
     return NextResponse.json({error: 'Unable to load profile'}, {status: 500});

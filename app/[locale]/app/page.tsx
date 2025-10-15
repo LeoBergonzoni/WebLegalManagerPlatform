@@ -1,7 +1,7 @@
 import {Suspense} from 'react';
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 import CopyLinkButton from '@/components/CopyLinkButton';
 
@@ -45,7 +45,7 @@ export default async function AppDashboardPage({params: {locale}}: Params) {
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     redirect(`/${locale}/auth/sign-in`);
   }
@@ -58,41 +58,50 @@ export default async function AppDashboardPage({params: {locale}}: Params) {
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
-  if (!profile) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-12 text-[var(--wlm-text)]">
-        <div className="rounded-[20px] border border-[#1f2125] bg-[#121316] p-8 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
-          <h1 className="text-3xl font-extrabold">Dashboard</h1>
-          <p className="mt-4 text-sm text-[#cfd3da]">
-            We couldn&apos;t prepare your account profile. Please refresh the page or contact support if the issue
-            persists.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  await ensureUserProfile({
+    supabase,
+    authUser: {id: user.id, email: user.email}
+  });
 
-  const {data: identityRow} = await supabase
-    .from('identities')
-    .select('id, verified_at, created_at')
-    .eq('user_id', profile.id)
-    .order('created_at', {ascending: false})
-    .limit(1)
-    .maybeSingle();
+  const {data: profile, error: profileErr} = await supabase
+    .from('users')
+    .select('id, email, name')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  const profileLoadIssue = profileErr?.code === 'PGRST116' || !profile;
+
+  const {data: identityRow} = profile?.id
+    ? await supabase
+        .from('identities')
+        .select('id, verified_at, created_at')
+        .eq('user_id', profile.id)
+        .order('created_at', {ascending: false})
+        .limit(1)
+        .maybeSingle()
+    : {data: null};
 
   const hasIdentity = Boolean(identityRow?.id);
   const isIdentityVerified = Boolean(identityRow?.verified_at);
+  const displayName = profile?.name?.trim() || user.email || 'Your dashboard';
 
   return (
     <div className="space-y-8">
+      {profileLoadIssue ? (
+        <div className="rounded-[20px] border border-amber-500/25 bg-amber-500/10 p-6 text-sm text-[#fce9b2] shadow-[0_10px_30px_rgba(2,6,23,0.25)]">
+          <h2 className="text-lg font-semibold text-[var(--wlm-text)]">We&apos;re setting up your workspace</h2>
+          <p className="mt-2 text-sm text-[#fce9b2]">
+            We couldn&apos;t load your account profile yet. Some dashboard data may be missing—try refreshing in a moment
+            or contact support if it continues.
+          </p>
+        </div>
+      ) : null}
+
       <section className="rounded-[24px] border border-[#1f2125] bg-[#121316] p-8 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.12em] text-[#8d939f]">Welcome back</p>
-            <h1 className="mt-2 text-3xl font-extrabold text-[var(--wlm-text)]">
-              {profile.name?.trim() || user.email || 'Your dashboard'}
-            </h1>
+            <h1 className="mt-2 text-3xl font-extrabold text-[var(--wlm-text)]">{displayName}</h1>
             <p className="mt-3 max-w-2xl text-sm text-[#cfd3da]">
               Track flagged content, follow the takedown process, and keep your brand safe. Everything you need lives in
               this workspace.
@@ -107,11 +116,11 @@ export default async function AppDashboardPage({params: {locale}}: Params) {
         </div>
 
         <Suspense fallback={<StatsSkeleton />}>
-          <StatsSection profileId={profile.id} />
+          <StatsSection profileId={profile?.id ?? null} />
         </Suspense>
       </section>
 
-      {!hasIdentity ? (
+      {profile?.id && !hasIdentity ? (
         <section className="rounded-[20px] border border-amber-500/25 bg-amber-500/10 p-6 shadow-[0_10px_30px_rgba(2,6,23,0.25)]">
           <h2 className="text-lg font-semibold text-[var(--wlm-text)]">Finish your identity check</h2>
           <p className="mt-2 text-sm text-[#fce9b2]">
@@ -124,7 +133,9 @@ export default async function AppDashboardPage({params: {locale}}: Params) {
             Upload identity document
           </Link>
         </section>
-      ) : !isIdentityVerified ? (
+      ) : null}
+
+      {profile?.id && hasIdentity && !isIdentityVerified ? (
         <section className="rounded-[20px] border border-[#1f2125] bg-[#121316] p-6 shadow-[0_10px_30px_rgba(2,6,23,0.25)]">
           <h2 className="text-lg font-semibold text-[var(--wlm-text)]">Identity under review</h2>
           <p className="mt-2 text-sm text-[#cfd3da]">
@@ -155,43 +166,51 @@ export default async function AppDashboardPage({params: {locale}}: Params) {
         </div>
 
         <Suspense fallback={<LatestFindingsSkeleton />}>
-          <LatestFindingsSection profileId={profile.id} locale={locale} />
+          <LatestFindingsSection profileId={profile?.id ?? null} locale={locale} />
         </Suspense>
       </section>
     </div>
   );
 }
 
-async function StatsSection({profileId}: {profileId: string}) {
-  const supabase = createServerSupabaseClient();
+async function StatsSection({profileId}: {profileId: string | null}) {
+  const supabase = getServerSupabase();
   if (!supabase) {
     return <StatsSkeleton />;
   }
 
-  const [foundResult, removedResult, submittedResult] = await Promise.all([
+  if (!profileId) {
+    return (
+      <div className="mt-8 rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-[#cfd3da]">
+        We&apos;re still loading your stats. Refresh the page once your profile is ready.
+      </div>
+    );
+  }
+
+  const [{count: foundCount}, {count: submittedCount}, {count: removedCount}] = await Promise.all([
     supabase.from('findings').select('id', {count: 'exact', head: true}).eq('user_id', profileId).eq('status', 'Found'),
-    supabase.from('findings').select('id', {count: 'exact', head: true}).eq('user_id', profileId).eq('status', 'Removed'),
     supabase
       .from('findings')
       .select('id', {count: 'exact', head: true})
       .eq('user_id', profileId)
-      .in('status', ['Submitted', 'Pending'])
+      .in('status', ['Pending', 'Submitted']),
+    supabase.from('findings').select('id', {count: 'exact', head: true}).eq('user_id', profileId).eq('status', 'Removed')
   ]);
 
   const stats = [
     {
       label: 'Found',
-      value: foundResult.count ?? 0,
+      value: foundCount ?? 0,
       description: 'Items waiting for your review.'
     },
     {
       label: 'Submitted',
-      value: submittedResult.count ?? 0,
+      value: submittedCount ?? 0,
       description: 'Takedowns already submitted or in progress.'
     },
     {
       label: 'Removed',
-      value: removedResult.count ?? 0,
+      value: removedCount ?? 0,
       description: 'Content removed after takedown.'
     }
   ];
@@ -237,12 +256,20 @@ type DashboardFinding = {
   created_at: string | null;
 };
 
-async function LatestFindingsSection({profileId, locale}: {profileId: string; locale: 'it' | 'en'}) {
-  const supabase = createServerSupabaseClient();
+async function LatestFindingsSection({profileId, locale}: {profileId: string | null; locale: 'it' | 'en'}) {
+  const supabase = getServerSupabase();
   if (!supabase) {
     return (
       <div className="mt-6 rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-[#cfd3da]">
         Unable to load findings right now.
+      </div>
+    );
+  }
+
+  if (!profileId) {
+    return (
+      <div className="mt-6 rounded-[18px] border border-[#1f2125] bg-[#121316] p-6 text-sm text-[#cfd3da]">
+        Findings will appear here once your profile is ready.
       </div>
     );
   }

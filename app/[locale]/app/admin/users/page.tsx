@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 type AdminUserRow = {
@@ -46,7 +46,7 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     redirect(`/${locale}/auth/sign-in`);
   }
@@ -59,7 +59,7 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
   if (!profile) {
     redirect(`/${locale}/app`);
   }

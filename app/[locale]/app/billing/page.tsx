@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 
 type PageProps = {
@@ -17,7 +17,7 @@ export default async function BillingPlaceholder({params: {locale}}: PageProps) 
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     return null;
   }
@@ -30,7 +30,7 @@ export default async function BillingPlaceholder({params: {locale}}: PageProps) 
     return null;
   }
 
-  await ensureUserProfile({supabase, authUser: user});
+  await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
 
   return (
     <div className="space-y-6">

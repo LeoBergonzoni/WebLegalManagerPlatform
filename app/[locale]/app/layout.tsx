@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 import UserMenu from './UserMenu';
 
@@ -46,7 +46,7 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     redirect(`/${locale}/auth/sign-in`);
   }
@@ -59,7 +59,7 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
   if (!profile) {
     return (
       <div className="min-h-screen bg-[#0f1013] text-[var(--wlm-text)]">
@@ -97,7 +97,7 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
 
   async function signOutAction() {
     'use server';
-    const supabaseAction = createServerSupabaseClient();
+    const supabaseAction = getServerSupabase();
     if (supabaseAction) {
       await supabaseAction.auth.signOut();
     }

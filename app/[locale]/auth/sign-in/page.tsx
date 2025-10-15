@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {getServerSupabase} from '@/lib/supabase/server';
 import SignInForm from './SignInForm';
 
 type PageProps = {
@@ -7,7 +7,7 @@ type PageProps = {
 };
 
 export default async function SignInPage({params: {locale}}: PageProps) {
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6 py-16">

@@ -1,31 +1,35 @@
 import {cookies} from 'next/headers';
-import {createServerClient, type CookieOptions} from '@supabase/ssr';
+import {createServerClient} from '@supabase/ssr';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createTestServerClient} from './testStore';
+import {assertEnvOrThrow, isSupabaseConfigured, isTestMode} from '@/lib/env';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const isTestMode = process.env.TEST_MODE === 'true';
-
-export const isSupabaseConfigured = isTestMode || Boolean(supabaseUrl && supabaseAnonKey);
-
-export function createServerSupabaseClient(): SupabaseClient | null {
+export function getServerSupabase(): SupabaseClient | null {
   const cookieStore = cookies();
 
   if (isTestMode) {
     return createTestServerClient(() => cookieStore.get('test-auth')?.value) as unknown as SupabaseClient;
   }
-  if (!isSupabaseConfigured || !supabaseUrl || !supabaseAnonKey) {
+
+  if (!isSupabaseConfigured) {
     return null;
   }
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  const {supabaseUrl, supabaseAnon} = assertEnvOrThrow();
+
+  return createServerClient(supabaseUrl, supabaseAnon, {
     cookies: {
-      get(name: string) {
+      get(name) {
         return cookieStore.get(name)?.value;
       },
-      set(_name: string, _value: string, _options: CookieOptions) {},
-      remove(_name: string, _options: CookieOptions) {}
+      set(name, value, options) {
+        cookieStore.set({name, value, ...options});
+      },
+      remove(name, options) {
+        cookieStore.set({name, value: '', ...options, maxAge: 0});
+      }
     }
   });
 }
+
+export {isSupabaseConfigured, isTestMode} from '@/lib/env';

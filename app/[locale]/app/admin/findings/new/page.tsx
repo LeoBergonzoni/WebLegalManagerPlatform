@@ -1,6 +1,6 @@
 import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
-import {createServerSupabaseClient, isSupabaseConfigured} from '@/lib/supabase/server';
+import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
 import NewFindingForm, {type NewFindingFormState} from '../NewFindingForm';
 
@@ -30,7 +30,7 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServerSupabase();
   if (!supabase) {
     redirect(`/${locale}/auth/sign-in`);
   }
@@ -43,7 +43,7 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: user});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
   if (!profile) {
     redirect(`/${locale}/app`);
   }
@@ -85,7 +85,7 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
   ): Promise<NewFindingFormState> {
     'use server';
 
-    const supabaseAction = createServerSupabaseClient();
+    const supabaseAction = getServerSupabase();
     if (!supabaseAction) {
       return {status: 'error', message: 'Supabase configuration missing'};
     }
@@ -98,7 +98,10 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
       return {status: 'error', message: 'Not authenticated'};
     }
 
-    const actingProfile = await ensureUserProfile({supabase: supabaseAction, authUser: currentUser});
+    const actingProfile = await ensureUserProfile({
+      supabase: supabaseAction,
+      authUser: {id: currentUser.id, email: currentUser.email}
+    });
     if (!actingProfile) {
       return {status: 'error', message: 'Profile not available'};
     }
