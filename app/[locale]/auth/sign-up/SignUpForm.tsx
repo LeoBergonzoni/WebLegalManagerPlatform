@@ -57,9 +57,8 @@ export default function SignUpForm({locale}: SignUpFormProps) {
       options: {
         data: name ? {full_name: name} : undefined,
         emailRedirectTo:
-          typeof window !== 'undefined'
-            ? `${window.location.origin}/${locale}/auth/callback`
-            : undefined
+          process.env.NEXT_PUBLIC_SITE_URL &&
+          `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?locale=${locale}`
       }
     });
 

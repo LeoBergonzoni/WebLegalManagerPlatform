@@ -13,6 +13,7 @@ export default function SignInForm({locale}: SignInFormProps) {
   const router = useRouter();
   const [supabase, setSupabase] = useState<ReturnType<typeof supabaseBrowserClient>>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -41,6 +42,7 @@ export default function SignInForm({locale}: SignInFormProps) {
 
     setLoading(true);
     setErrorMessage(null);
+    setInfoMessage(null);
 
     if (!supabase) {
       setErrorMessage('Supabase is not configured.');
@@ -48,33 +50,43 @@ export default function SignInForm({locale}: SignInFormProps) {
       return;
     }
 
-    const {data, error} = await supabase.auth.signInWithPassword({
+    const callbackRedirect =
+      process.env.NEXT_PUBLIC_SITE_URL &&
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?locale=${locale}`;
+
+    const signInPayload: {
+      email: string;
+      password: string;
+      options?: Record<string, unknown>;
+    } = {
       email,
       password
-    });
+    };
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (callbackRedirect) {
+      signInPayload.options = {emailRedirectTo: callbackRedirect};
+    }
+
+    try {
+      const {data, error} = await supabase.auth.signInWithPassword(signInPayload as any);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        router.replace(`/${locale}/app`);
+        router.refresh();
+        return;
+      }
+
+      setInfoMessage('Check your inbox for the secure sign-in link to finish signing in.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in right now.';
+      setErrorMessage(message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const user = data.user;
-    if (user) {
-      await supabase
-        .from('users')
-        .upsert(
-          {
-            auth_user_id: user.id,
-            email: user.email ?? email,
-            name: user.user_metadata?.full_name ?? null
-          },
-          {onConflict: 'auth_user_id'}
-        );
-    }
-
-    router.replace(`/${locale}/app`);
-    router.refresh();
   };
 
   if (notConfigured) {
@@ -125,6 +137,7 @@ export default function SignInForm({locale}: SignInFormProps) {
           {errorMessage}
         </p>
       ) : null}
+      {infoMessage ? <p className="text-sm text-[var(--wlm-yellow)]">{infoMessage}</p> : null}
 
       <button
         type="submit"
