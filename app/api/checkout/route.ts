@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: 'Not authenticated'}, {status: 401});
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
 
   if (!profile) {
     return NextResponse.json({error: 'Unable to load profile'}, {status: 500});

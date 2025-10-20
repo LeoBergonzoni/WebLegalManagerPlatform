@@ -30,7 +30,7 @@ export default async function BillingPlaceholder({params: {locale}}: PageProps) 
     return null;
   }
 
-  await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
 
   return (
     <div className="space-y-6">

@@ -44,7 +44,7 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
   if (!profile) {
     redirect(`/${locale}/app`);
   }
@@ -98,7 +98,7 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
 
     const actingProfile = await ensureUserProfile({
       supabase: supabaseAction,
-      authUser: {id: currentUser.id, email: currentUser.email}
+      authUser: {id: currentUser.id, email: currentUser.email ?? null}
     });
     if (!actingProfile) {
       return {status: 'error', message: 'Profile not available'};

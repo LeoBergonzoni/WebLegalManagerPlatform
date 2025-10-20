@@ -60,7 +60,7 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
   if (!profile) {
     redirect(`/${locale}/app`);
   }

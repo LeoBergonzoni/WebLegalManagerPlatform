@@ -43,7 +43,7 @@ export async function saveNicknamesAction(
     return {status: 'error', message: t('app.nicknames.errors.notAuthenticated')};
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
 
   if (!profile) {
     return {status: 'error', message: t('app.nicknames.errors.profileUnavailable')};

@@ -50,7 +50,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
     redirect(`/${locale}/auth/sign-in`);
   }
 
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email}});
+  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
 
   if (!profile) {
     return (
@@ -135,7 +135,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
 
     const actingProfile = await ensureUserProfile({
       supabase: supabaseAction,
-      authUser: {id: currentUser.id, email: currentUser.email}
+      authUser: {id: currentUser.id, email: currentUser.email ?? null}
     });
     if (!actingProfile) {
       throw new Error('Profile not found');
@@ -191,7 +191,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
 
     const actingProfile = await ensureUserProfile({
       supabase: supabaseAction,
-      authUser: {id: currentUser.id, email: currentUser.email}
+      authUser: {id: currentUser.id, email: currentUser.email ?? null}
     });
     if (!actingProfile) {
       throw new Error('Profile not found');

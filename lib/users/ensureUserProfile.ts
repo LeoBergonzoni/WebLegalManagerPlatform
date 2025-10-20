@@ -2,7 +2,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 
 export type UserProfileRow = {
   id: string;
-  email: string;
+  email: string | null;
   name: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -13,11 +13,13 @@ export async function ensureUserProfile({
   authUser
 }: {
   supabase: SupabaseClient;
-  authUser: {id: string; email: string | null};
+  authUser: {id: string; email: string | null | undefined};
 }): Promise<UserProfileRow | null> {
   if (!supabase || !authUser?.id) {
     return null;
   }
+
+  const email = authUser.email ?? null;
 
   const {data: existing} = await supabase
     .from('users')
@@ -33,7 +35,7 @@ export async function ensureUserProfile({
     .from('users')
     .insert({
       auth_user_id: authUser.id,
-      email: authUser.email ?? ''
+      email: email
     })
     .select('id, email, name, stripe_customer_id, stripe_subscription_id')
     .single();
