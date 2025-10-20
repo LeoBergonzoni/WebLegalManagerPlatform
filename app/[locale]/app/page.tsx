@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import MetricsSection from './MetricsSection';
 import {getCurrentProfile} from '@/lib/supabase/profile';
+import {getUserFindingStats} from '@/lib/findings';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +11,7 @@ type PageProps = {
 
 export default async function AppHomePage({params: {locale}}: PageProps) {
   const profile = await getCurrentProfile();
+  const findingStats = await getUserFindingStats();
 
   if (!profile) {
     return (
@@ -58,6 +61,8 @@ export default async function AppHomePage({params: {locale}}: PageProps) {
           <div className="mt-1 text-xl font-semibold">OK</div>
         </div>
       </div>
+
+      <MetricsSection stats={findingStats} />
     </main>
   );
 }
