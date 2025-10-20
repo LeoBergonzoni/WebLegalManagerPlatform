@@ -1,7 +1,6 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-// @ts-expect-error: tipi forniti dal file ambientale in /types per build CI
 import {useFormState} from 'react-dom';
 import clsx from 'clsx';
 import {initialNicknamesFormState, saveNicknamesAction} from './nicknamesActions';
