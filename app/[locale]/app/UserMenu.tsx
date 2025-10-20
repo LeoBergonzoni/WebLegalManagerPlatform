@@ -11,6 +11,14 @@ type UserMenuProps = {
   adminHref?: string;
   isAdmin?: boolean;
   signOutAction: () => Promise<void>;
+  labels: {
+    account: string;
+    signedInAs: string;
+    admin: string;
+    uploadId: string;
+    billing: string;
+    signOut: string;
+  };
 };
 
 export default function UserMenu({
@@ -20,7 +28,8 @@ export default function UserMenu({
   billingHref,
   adminHref,
   isAdmin,
-  signOutAction
+  signOutAction,
+  labels
 }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -36,13 +45,13 @@ export default function UserMenu({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const displayName = name?.trim() || email || 'Account';
+  const displayName = name?.trim() || email || labels.account;
   const initials = displayName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join('') || 'U';
+    .join('') || labels.account.slice(0, 1).toUpperCase() || 'U';
 
   return (
     <div className="relative" ref={menuRef}>
@@ -57,7 +66,7 @@ export default function UserMenu({
           {initials}
         </span>
         <span className="hidden text-left leading-tight sm:block">
-          <span className="block text-xs uppercase tracking-[0.14em] text-[#8d939f]">Account</span>
+          <span className="block text-xs uppercase tracking-[0.14em] text-[#8d939f]">{labels.account}</span>
           <span className="block text-sm font-semibold text-[var(--wlm-text)]">{displayName}</span>
         </span>
       </button>
@@ -65,7 +74,7 @@ export default function UserMenu({
       {open ? (
         <div className="absolute right-0 z-20 mt-3 w-60 overflow-hidden rounded-[16px] border border-[#1f2125] bg-[#121316] shadow-[0_16px_40px_rgba(2,6,23,0.45)]">
           <div className="border-b border-[#1f2125] px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#8d939f]">Signed in</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[#8d939f]">{labels.signedInAs}</p>
             <p className="mt-1 text-sm font-semibold text-[var(--wlm-text)]">{displayName}</p>
             {email ? <p className="text-xs text-[#9aa0a6]">{email}</p> : null}
           </div>
@@ -77,7 +86,7 @@ export default function UserMenu({
                 className="rounded-[12px] px-3 py-2 text-sm font-medium text-[#cfd3da] transition hover:bg-[#1a1c21] hover:text-[var(--wlm-yellow)]"
                 onClick={() => setOpen(false)}
               >
-                Admin
+                {labels.admin}
               </Link>
             ) : null}
             <Link
@@ -85,21 +94,21 @@ export default function UserMenu({
               className="rounded-[12px] px-3 py-2 text-sm font-medium text-[#cfd3da] transition hover:bg-[#1a1c21] hover:text-[var(--wlm-yellow)]"
               onClick={() => setOpen(false)}
             >
-              Upload ID
+              {labels.uploadId}
             </Link>
             <Link
               href={billingHref}
               className="rounded-[12px] px-3 py-2 text-sm font-medium text-[#cfd3da] transition hover:bg-[#1a1c21] hover:text-[var(--wlm-yellow)]"
               onClick={() => setOpen(false)}
             >
-              Billing &amp; plan
+              {labels.billing}
             </Link>
             <form action={signOutAction}>
               <button
                 type="submit"
                 className="w-full rounded-[12px] px-3 py-2 text-left text-sm font-medium text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
               >
-                Sign out
+                {labels.signOut}
               </button>
             </form>
           </div>

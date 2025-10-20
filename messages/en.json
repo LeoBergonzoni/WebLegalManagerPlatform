@@ -21,6 +21,7 @@
   "f3_t": "Dashboard & Audit",
   "f3_d": "Approve links, track states (Found → Submitted → Removed), download reports.",
   "pricing_title": "Pricing",
+  "pricing_banner": "Sign up to access paid plans",
   "starter": "Starter",
   "starter_tag": "For creators with few links per month",
   "starter_1": "1 scan/week",
@@ -38,6 +39,143 @@
   "legal": "This site uses secure storage. IDs and mandates are processed under GDPR.",
   "app_title": "WLM Dashboard",
   "app_intro": "Your application area is coming soon. You’ll receive alerts as reports are ready.",
+  "how_section_subtitle": "From signup to actionable removals in a few guided steps.",
+  "how_card1_title": "Create your workspace",
+  "how_card1_desc": "Verify your account and share the nicknames or brand names we should monitor.",
+  "how_card2_title": "Approve findings",
+  "how_card2_desc": "Review alerts inside the dashboard and green-light the takedowns you want us to file.",
+  "how_card3_title": "Track removals",
+  "how_card3_desc": "Follow the status of each submission and receive final reports in your archive.",
+  "use_cases_title": "Use cases",
+  "use_cases_subtitle": "Tune Web Legal Manager to different digital footprints.",
+  "use_case1_title": "Content creators",
+  "use_case1_desc": "Keep search results clean, remove leaks, and get fast updates when new links appear.",
+  "use_case1_tag": "Creators",
+  "use_case2_title": "Brands & agencies",
+  "use_case2_desc": "Protect trademarks and campaign assets with centralized oversight for your team.",
+  "use_case2_tag": "Brands",
+  "use_case3_title": "Executives & VIP",
+  "use_case3_desc": "Monitor impersonation attempts and remove sensitive content across platforms.",
+  "use_case3_tag": "VIP",
+  "footer_privacy": "Privacy",
+  "footer_terms": "Terms",
+  "app": {
+    "common": {
+      "goHome": "Go to home",
+      "signOut": "Sign out",
+      "backToDashboard": "Back to dashboard"
+    },
+    "layout": {
+      "profileError": {
+        "title": "Dashboard",
+        "body": "We could not load your account profile right now. Please refresh the page or contact support if the issue persists."
+      },
+      "nav": {
+        "dashboard": "Dashboard",
+        "identity": "Identity check",
+        "findings": "Findings",
+        "adminUsers": "Users",
+        "adminNewFinding": "New finding"
+      },
+      "sections": {
+        "workspace": "Workspace",
+        "admin": "Admin"
+      },
+      "sidebar": {
+        "signedInAs": "Signed in as",
+        "accountFallback": "Account",
+        "noEmail": "No email on file"
+      }
+    },
+    "userMenu": {
+      "account": "Account",
+      "signedIn": "Signed in",
+      "admin": "Admin",
+      "uploadId": "Upload ID",
+      "billing": "Billing & plan",
+      "signOut": "Sign out"
+    },
+    "dashboard": {
+      "loadingError": {
+        "title": "Dashboard",
+        "body": "We could not load your account profile right now. If you just confirmed your email, please refresh in a few seconds. If the issue persists, contact support."
+      },
+      "planNames": {
+        "free": "Free",
+        "starter": "Starter",
+        "pro": "Pro"
+      },
+      "billingStatuses": {
+        "inactive": "Inactive",
+        "active": "Active",
+        "trialing": "Trialing",
+        "past_due": "Past due",
+        "canceled": "Canceled"
+      },
+      "welcome": "Welcome back, {name}",
+      "welcomeFallback": "Account",
+      "status": {
+        "ok": "OK"
+      },
+      "cards": {
+        "plan": "Plan",
+        "billing": "Billing",
+        "status": "Status"
+      },
+      "pricing": {
+        "title": "Upgrade your plan",
+        "subtitle": "Unlock scheduled scans and extended takedown coverage with one of our subscriptions.",
+        "currentPlan": "Current plan: {plan}",
+        "checkoutUnavailable": "Checkout unavailable"
+      }
+    },
+    "metrics": {
+      "totalRemovedTitle": "Total URLs Removed",
+      "removalMetricsTitle": "Removal metrics",
+      "totalCount": "Total: {count}",
+      "emptyState": "No takedown outcomes yet. Process new URLs to see metrics here.",
+      "removedLabel": "Removed",
+      "delistedLabel": "Delisted"
+    },
+    "nicknames": {
+      "pill": "Nicknames",
+      "title": "Manage your aliases",
+      "subtitle": "Add up to four nicknames or stage names you use online. We use them to speed up takedown matching and identity verification.",
+      "moreSpacePrompt": "Need more space?",
+      "openPage": "Open the dedicated page",
+      "savedTitle": "Saved nicknames",
+      "savedCount": "{count}/4",
+      "emptyState": "No nicknames saved yet. Add them using the form.",
+      "form": {
+        "placeholder": "Add a nickname",
+        "remove": "Remove",
+        "addWithCount": "Add nickname (+{count})",
+        "limitReached": "Limit reached",
+        "submit": "Save nicknames",
+        "slotsUsed": "{count}/4 slots used"
+      },
+      "errors": {
+        "authUnavailable": "Authentication unavailable",
+        "notAuthenticated": "Not authenticated",
+        "profileUnavailable": "Profile unavailable",
+        "saveFailed": "Unable to save nicknames"
+      },
+      "success": {
+        "updated": "Nicknames updated",
+        "cleared": "Nicknames cleared"
+      },
+      "page": {
+        "title": "Nicknames",
+        "subtitle": "Keep track of the aliases we should scan for you. You can store up to four nicknames. Empty fields are ignored on save.",
+        "errorBody": "We could not load your profile right now. Please refresh the page or contact support if the problem persists."
+      }
+    },
+    "identity": {
+      "nicknames": {
+        "backToIdentity": "Identity"
+      }
+    }
+  },
   "privacy_title": "Privacy Policy",
   "privacy_body": "We process personal information solely to perform delisting and removal activities. Data is stored in EU infrastructure with controlled access.",
   "terms_title": "Terms of Service",

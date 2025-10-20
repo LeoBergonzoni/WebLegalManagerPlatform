@@ -21,6 +21,7 @@
   "f3_t": "Dashboard & Audit",
   "f3_d": "Approvi i link, segui gli stati (Found → Submitted → Removed) e scarichi report.",
   "pricing_title": "Pricing",
+  "pricing_banner": "Iscriviti per accedere ai piani a pagamento",
   "starter": "Starter",
   "starter_tag": "Per creator con pochi link al mese",
   "starter_1": "1 scansione/settimana",
@@ -38,6 +39,143 @@
   "legal": "Questo sito usa storage sicuro. Documenti d'identità e deleghe sono trattati secondo GDPR.",
   "app_title": "Dashboard WLM",
   "app_intro": "La tua area applicativa sarà presto disponibile. Riceverai notifiche quando i report sono pronti.",
+  "how_section_subtitle": "Dal mandato alle rimozioni operative in pochi passaggi guidati.",
+  "how_card1_title": "Crea la tua area",
+  "how_card1_desc": "Verifica l'account e indica nickname o nomi del brand da monitorare.",
+  "how_card2_title": "Approva le segnalazioni",
+  "how_card2_desc": "Rivedi gli alert in dashboard e autorizza i takedown da inviare.",
+  "how_card3_title": "Segui le rimozioni",
+  "how_card3_desc": "Segui lo stato di ogni invio e ricevi i report finali nel tuo archivio.",
+  "use_cases_title": "Casi d'uso",
+  "use_cases_subtitle": "Adatta Web Legal Manager a impronte digitali diverse.",
+  "use_case1_title": "Creator e talent",
+  "use_case1_desc": "Mantieni puliti i risultati di ricerca, rimuovi leak e ricevi avvisi rapidi sui nuovi link.",
+  "use_case1_tag": "Creator",
+  "use_case2_title": "Brand e agenzie",
+  "use_case2_desc": "Proteggi marchi e asset di campagna con un controllo centralizzato per il tuo team.",
+  "use_case2_tag": "Brand",
+  "use_case3_title": "Executive e VIP",
+  "use_case3_desc": "Monitora impersonificazioni e rimuovi contenuti sensibili sulle piattaforme.",
+  "use_case3_tag": "VIP",
+  "footer_privacy": "Privacy",
+  "footer_terms": "Termini",
+  "app": {
+    "common": {
+      "goHome": "Vai alla home",
+      "signOut": "Esci",
+      "backToDashboard": "Torna alla dashboard"
+    },
+    "layout": {
+      "profileError": {
+        "title": "Dashboard",
+        "body": "Non riusciamo a caricare il tuo profilo. Aggiorna la pagina o contatta il supporto se il problema persiste."
+      },
+      "nav": {
+        "dashboard": "Dashboard",
+        "identity": "Verifica identità",
+        "findings": "Segnalazioni",
+        "adminUsers": "Utenti",
+        "adminNewFinding": "Nuova segnalazione"
+      },
+      "sections": {
+        "workspace": "Workspace",
+        "admin": "Amministrazione"
+      },
+      "sidebar": {
+        "signedInAs": "Accesso come",
+        "accountFallback": "Account",
+        "noEmail": "Nessuna email presente"
+      }
+    },
+    "userMenu": {
+      "account": "Account",
+      "signedIn": "Accesso confermato",
+      "admin": "Admin",
+      "uploadId": "Carica documento",
+      "billing": "Fatturazione e piano",
+      "signOut": "Esci"
+    },
+    "dashboard": {
+      "loadingError": {
+        "title": "Dashboard",
+        "body": "Non riusciamo a caricare il tuo profilo. Se hai appena confermato l'email, aggiorna tra qualche secondo. Se il problema continua, contatta il supporto."
+      },
+      "planNames": {
+        "free": "Gratuito",
+        "starter": "Starter",
+        "pro": "Pro"
+      },
+      "billingStatuses": {
+        "inactive": "Inattivo",
+        "active": "Attivo",
+        "trialing": "In prova",
+        "past_due": "In ritardo",
+        "canceled": "Annullato"
+      },
+      "welcome": "Bentornato, {name}",
+      "welcomeFallback": "Account",
+      "status": {
+        "ok": "OK"
+      },
+      "cards": {
+        "plan": "Piano",
+        "billing": "Fatturazione",
+        "status": "Stato"
+      },
+      "pricing": {
+        "title": "Aggiorna il tuo piano",
+        "subtitle": "Sblocca scansioni programmate e copertura aggiuntiva con uno dei nostri abbonamenti.",
+        "currentPlan": "Piano attuale: {plan}",
+        "checkoutUnavailable": "Checkout non disponibile"
+      }
+    },
+    "metrics": {
+      "totalRemovedTitle": "URL rimossi totali",
+      "removalMetricsTitle": "Metriche di rimozione",
+      "totalCount": "Totale: {count}",
+      "emptyState": "Nessun risultato di takedown per ora. Processa nuovi URL per vedere le metriche qui.",
+      "removedLabel": "Rimossi",
+      "delistedLabel": "Delistati"
+    },
+    "nicknames": {
+      "pill": "Nickname",
+      "title": "Gestisci i tuoi alias",
+      "subtitle": "Aggiungi fino a quattro nickname o nomi d'arte usati online. Ci aiutano a velocizzare gli abbinamenti e le verifiche.",
+      "moreSpacePrompt": "Serve più spazio?",
+      "openPage": "Apri la pagina dedicata",
+      "savedTitle": "Nickname salvati",
+      "savedCount": "{count}/4",
+      "emptyState": "Nessun nickname salvato. Aggiungili usando il form.",
+      "form": {
+        "placeholder": "Aggiungi un nickname",
+        "remove": "Rimuovi",
+        "addWithCount": "Aggiungi nickname (+{count})",
+        "limitReached": "Limite raggiunto",
+        "submit": "Salva nickname",
+        "slotsUsed": "{count}/4 slot usati"
+      },
+      "errors": {
+        "authUnavailable": "Autenticazione non disponibile",
+        "notAuthenticated": "Non autenticato",
+        "profileUnavailable": "Profilo non disponibile",
+        "saveFailed": "Impossibile salvare i nickname"
+      },
+      "success": {
+        "updated": "Nickname aggiornati",
+        "cleared": "Nickname rimossi"
+      },
+      "page": {
+        "title": "Nickname",
+        "subtitle": "Tieni traccia degli alias per cui dobbiamo monitorare. Puoi salvare fino a quattro nickname; i campi vuoti vengono ignorati al salvataggio.",
+        "errorBody": "Non riusciamo a caricare il tuo profilo. Aggiorna la pagina o contatta il supporto se il problema persiste."
+      }
+    },
+    "identity": {
+      "nicknames": {
+        "backToIdentity": "Identità"
+      }
+    }
+  },
   "privacy_title": "Informativa Privacy",
   "privacy_body": "Tratteremo le informazioni personali solo per eseguire le attività di delisting e rimozione. I dati sono conservati in infrastruttura europea con accesso controllato.",
   "terms_title": "Condizioni di Servizio",

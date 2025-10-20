@@ -1,6 +1,6 @@
 import {cookies} from 'next/headers';
 
-type TableName = 'users' | 'identities' | 'findings' | 'takedowns';
+type TableName = 'users' | 'identities' | 'findings' | 'takedowns' | 'nicknames';
 
 type TestUser = {
   id: string;
@@ -47,11 +47,20 @@ type TakedownRow = {
   created_at: string;
 };
 
+type NicknameRow = {
+  id: string;
+  user_id: string;
+  nickname: string;
+  position: number;
+  created_at: string;
+};
+
 type RowMap = {
   users: UserRow;
   identities: IdentityRow;
   findings: FindingRow;
   takedowns: TakedownRow;
+  nicknames: NicknameRow;
 };
 
 type RowsOf<T extends TableName> = RowMap[T][];
@@ -114,13 +123,15 @@ function createDefaultStore(): TestStore {
           created_at: now
         }
       ],
-      takedowns: []
+      takedowns: [],
+      nicknames: []
     },
     counters: {
       users: 1,
       identities: 0,
       findings: 2,
-      takedowns: 0
+      takedowns: 0,
+      nicknames: 0
     }
   };
 }
@@ -174,6 +185,15 @@ type ModifyBuilder<T extends TableName> = {
     onrejected?: ((reason: any) => TResult | Promise<TResult>) | undefined | null
   ): Promise<TResult>;
   catch: (...args: any[]) => ModifyBuilder<T>;
+};
+
+type DeleteBuilder<T extends TableName> = {
+  eq<K extends keyof RowMap[T]>(column: K, value: RowMap[T][K]): DeleteBuilder<T>;
+  then<TResult = unknown>(
+    onfulfilled?: ((value: {data: RowsOf<T>; error: null}) => TResult | Promise<TResult>) | undefined | null,
+    onrejected?: ((reason: any) => TResult | Promise<TResult>) | undefined | null
+  ): Promise<TResult>;
+  catch: (...args: any[]) => DeleteBuilder<T>;
 };
 
 function createSelectBuilder<T extends TableName>(
@@ -289,6 +309,48 @@ function createModifyBuilder<T extends TableName>(
   return builder;
 }
 
+function createDeleteBuilder<T extends TableName>(table: T, store: TestStore): DeleteBuilder<T> {
+  const filters: FilterFn<T>[] = [];
+
+  const execute = (): RowsOf<T> => {
+    const rows = getRows(table, store);
+    const removed: RowsOf<T> = [];
+
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+      const row = rows[index];
+      if (filters.length === 0 || filters.every((fn) => fn(row))) {
+        removed.push(clone(row) as RowMap[T]);
+        rows.splice(index, 1);
+      }
+    }
+
+    return removed;
+  };
+
+  const builder: DeleteBuilder<T> = {
+    eq(column, value) {
+      filters.push((row) => row[column] === value);
+      return builder;
+    },
+    async then(onfulfilled, onrejected) {
+      try {
+        const result = {data: execute(), error: null as null};
+        return onfulfilled ? await onfulfilled(result) : (result as unknown as any);
+      } catch (error) {
+        if (onrejected) {
+          return onrejected(error);
+        }
+        throw error;
+      }
+    },
+    catch() {
+      return builder;
+    }
+  };
+
+  return builder;
+}
+
 function tableApi<T extends TableName>(table: T, store: TestStore) {
   return {
     select: () => createSelectBuilder(table, store),
@@ -356,7 +418,8 @@ function tableApi<T extends TableName>(table: T, store: TestStore) {
 
       return {data: updated, error: null};
     },
-    update: (values: Partial<RowMap[T]>) => createModifyBuilder(table, store, values)
+    update: (values: Partial<RowMap[T]>) => createModifyBuilder(table, store, values),
+    delete: () => createDeleteBuilder(table, store)
   };
 }
 

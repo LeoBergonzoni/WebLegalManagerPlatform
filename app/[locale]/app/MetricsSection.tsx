@@ -2,6 +2,7 @@
 
 import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip} from 'recharts';
 import type {ValueType, NameType} from 'recharts/types/component/DefaultTooltipContent';
+import {useAppTranslations} from './TranslationsProvider';
 
 type MetricsSectionProps = {
   stats: {
@@ -14,12 +15,13 @@ type MetricsSectionProps = {
 const SLICE_COLORS = ['#34d399', '#f97316'];
 
 export default function MetricsSection({stats}: MetricsSectionProps) {
+  const t = useAppTranslations();
   const totalForChart = (stats.removed ?? 0) + (stats.delisted ?? 0);
   const chartData =
     totalForChart > 0
       ? [
-          {name: 'Removed', value: stats.removed},
-          {name: 'Delisted', value: stats.delisted}
+          {name: t('app.metrics.removedLabel'), value: stats.removed},
+          {name: t('app.metrics.delistedLabel'), value: stats.delisted}
         ]
       : [];
 
@@ -32,21 +34,21 @@ export default function MetricsSection({stats}: MetricsSectionProps) {
   return (
     <section className="mt-10 space-y-6">
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-        <p className="text-sm text-white/70">Total URLs Removed</p>
+        <p className="text-sm text-white/70">{t('app.metrics.totalRemovedTitle')}</p>
         <p className="mt-2 text-3xl font-semibold">{stats.removed}</p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--wlm-text)]">Removal metrics</h2>
+          <h2 className="text-lg font-semibold text-[var(--wlm-text)]">{t('app.metrics.removalMetricsTitle')}</h2>
           <span className="text-xs uppercase tracking-[0.14em] text-white/60">
-            Total: {stats.total}
+            {t('app.metrics.totalCount').replace('{count}', String(stats.total))}
           </span>
         </div>
 
         {stats.total === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/10 py-16 text-center text-sm text-white/60">
-            No takedown outcomes yet. Process new URLs to see metrics here.
+            {t('app.metrics.emptyState')}
           </div>
         ) : (
           <div className="h-64 w-full">

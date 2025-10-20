@@ -10,6 +10,7 @@ export type AppProfile = {
   name: string | null;
   plan: string | null;
   billing_status: string | null;
+  stripe_customer_id: string | null;
 };
 
 export async function getSupabaseServer() {
@@ -39,7 +40,7 @@ export async function getCurrentProfile(): Promise<AppProfile | null> {
 
   const {data, error} = await supabase
     .from('users')
-    .select('id, auth_user_id, email, name, plan, billing_status')
+    .select('id, auth_user_id, email, name, plan, billing_status, stripe_customer_id')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
