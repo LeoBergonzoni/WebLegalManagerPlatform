@@ -1,6 +1,8 @@
 'use client';
 
-import {useEffect, useMemo, useState, DragEvent, ChangeEvent} from 'react';
+import {useEffect, useState} from 'react';
+import {useMemo} from 'react';
+import type {DragEvent, ChangeEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {supabaseBrowserClient} from '@/lib/supabase/client';
 
@@ -32,9 +34,11 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowserClient(), []);
   const [bucketStatus, setBucketStatus] = useState<{ok: boolean; message: string}>(() => ({
-    ok: Boolean(supabase),
+    ok: false,
     message: ''
   }));
+  const storageReady = Boolean(supabase) && bucketStatus.ok;
+  const storageUnavailable = !storageReady;
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [docType, setDocType] = useState<string>(identity?.doc_type ?? 'passport');
@@ -122,17 +126,12 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
   const handleUpload = async () => {
     resetMessages();
 
-    if (!supabase) {
-      setError('Storage not configured. Please contact support.');
-      return;
-    }
-
     if (!file) {
       setError('Select a document before saving.');
       return;
     }
 
-    if (!bucketStatus.ok) {
+    if (!storageReady || !supabase) {
       setError(bucketStatus.message || 'Storage not configured. Please contact support.');
       return;
     }
@@ -213,17 +212,17 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
     }
   };
 
-  if (!supabase) {
+  if (!storageReady) {
     return (
       <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
-        Storage non configurato o sessione non inizializzata. Riprova più tardi.
+        {bucketStatus.message || 'Storage non configurato o sessione non inizializzata. Riprova più tardi.'}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {!bucketStatus.ok ? (
+      {storageUnavailable ? (
         <div className="rounded-[18px] border border-amber-500/30 bg-amber-500/10 p-3 text-sm font-semibold text-amber-200">
           {bucketStatus.message || 'Storage not configured'}
         </div>
