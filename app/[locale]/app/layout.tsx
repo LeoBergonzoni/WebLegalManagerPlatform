@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation';
 import {ErrorBoundary} from '@/components/ErrorBoundary';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
+import {isAdmin} from '@/lib/auth';
 import UserMenu from './UserMenu';
 
 type LayoutProps = {
@@ -87,13 +88,9 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
     {href: `/${locale}/app/findings`, label: 'Findings'}
   ];
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminEmails.includes((user.email ?? '').toLowerCase());
+  const isAdminUser = await isAdmin(user.id);
 
-  const adminLinks: NavLink[] = isAdmin
+  const adminLinks: NavLink[] = isAdminUser
     ? [
         {href: `/${locale}/app/admin/users`, label: 'Users'},
         {href: `/${locale}/app/admin/findings/new`, label: 'New finding'}
@@ -128,7 +125,7 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
             </div>
 
             <NavigationSection title="Workspace" links={baseLinks} />
-            {isAdmin ? <NavigationSection title="Admin" links={adminLinks} /> : null}
+            {isAdminUser ? <NavigationSection title="Admin" links={adminLinks} /> : null}
           </aside>
 
           <div className="flex-1 space-y-8 pb-16">
@@ -155,6 +152,8 @@ export default async function AppLayout({children, params: {locale}}: LayoutProp
                   email={user.email ?? ''}
                   identityHref={identityHref}
                   billingHref={billingHref}
+                  adminHref={isAdminUser ? `/${locale}/app/admin/users` : undefined}
+                  isAdmin={isAdminUser}
                   signOutAction={signOutAction}
                 />
               </div>

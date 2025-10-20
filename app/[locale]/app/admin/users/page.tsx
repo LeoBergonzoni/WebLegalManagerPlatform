@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {redirect} from 'next/navigation';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
+import {isAdmin} from '@/lib/auth';
 
 type AdminUserRow = {
   id: string;
@@ -64,12 +65,8 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     redirect(`/${locale}/app`);
   }
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminEmails.includes((user.email ?? '').toLowerCase());
-  if (!isAdmin) {
+  const isAdminUser = await isAdmin(user.id);
+  if (!isAdminUser) {
     redirect(`/${locale}/app`);
   }
 

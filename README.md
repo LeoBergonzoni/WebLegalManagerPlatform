@@ -20,7 +20,7 @@ This repository contains the Next.js landing experience for Web Legal Manager, b
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY` (required by Stripe webhooks to update billing fields)
-  - `ADMIN_EMAILS` (optional list enabling manual verification button in `/app/identity`).
+- Grant admin access by setting `is_admin = true` on rows in `public.users` via the Supabase SQL editor or CLI.
 - In Supabase Storage, create a bucket named `ids` (standard bucket). Add the following row-level security policies so authenticated users can manage only their own files:
   ```sql
   create policy if not exists "ids_upload_own"

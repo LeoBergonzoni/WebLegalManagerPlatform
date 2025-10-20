@@ -16,6 +16,7 @@ type UserRow = {
   billing_status?: string | null;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  is_admin?: boolean | null;
 };
 
 type IdentityRow = {
@@ -23,6 +24,7 @@ type IdentityRow = {
   user_id: string;
   doc_type: string | null;
   doc_url: string | null;
+  status?: string | null;
   verified_at: string | null;
   created_at: string;
 };
@@ -89,7 +91,8 @@ function createDefaultStore(): TestStore {
           plan: null,
           billing_status: null,
           stripe_customer_id: null,
-          stripe_subscription_id: null
+          stripe_subscription_id: null,
+          is_admin: false
         }
       ],
       identities: [],
@@ -294,6 +297,12 @@ function tableApi<T extends TableName>(table: T, store: TestStore) {
       const rows = getRows(table, store);
       const inserted = items.map((item) => {
         const record = {...(item as RowMap[T])};
+        if (table === 'users' && !('is_admin' in record)) {
+          (record as RowMap['users']).is_admin = false;
+        }
+        if (table === 'identities' && !('status' in record)) {
+          (record as RowMap['identities']).status = 'submitted';
+        }
         if (!record.id) {
           (record as RowMap[T] & {id: string}).id = generateId(table, store);
         }
@@ -313,6 +322,12 @@ function tableApi<T extends TableName>(table: T, store: TestStore) {
 
       items.forEach((item) => {
         const incoming = {...(item as RowMap[T])};
+        if (table === 'users' && !('is_admin' in incoming)) {
+          (incoming as RowMap['users']).is_admin = false;
+        }
+        if (table === 'identities' && !('status' in incoming)) {
+          (incoming as RowMap['identities']).status = 'submitted';
+        }
         const key = conflictKey ? incoming[conflictKey] : undefined;
         if (conflictKey && key != null) {
           const existing = rows.find((row) => row[conflictKey] === key);

@@ -8,6 +8,7 @@ type IdentityRecord = {
   id: string;
   doc_type: string | null;
   doc_url: string | null;
+  status: string | null;
   verified_at: string | null;
 };
 
@@ -172,6 +173,7 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
         .update({
           doc_type: docType,
           doc_url: docUrl,
+          status: 'submitted',
           verified_at: null
         })
         .eq('id', identity.id)
@@ -181,7 +183,9 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       const {error} = await supabase.from('identities').insert({
         user_id: profileId,
         doc_type: docType,
-        doc_url: docUrl
+        doc_url: docUrl,
+        status: 'submitted',
+        verified_at: null
       });
       dbError = error;
     }
@@ -192,7 +196,7 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       return;
     }
 
-    setInfo('Document uploaded successfully. Verification pending.');
+    setInfo('Document uploaded successfully. Status: pending review.');
     setFile(null);
     setPreviewUrl(null);
     setUploading(false);

@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
+import {isAdmin} from '@/lib/auth';
 import FindingsListClient from './FindingsListClient';
 import {ensureUserProfile, type UserProfileRow} from '@/lib/users/ensureUserProfile';
 
@@ -63,15 +64,11 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
     );
   }
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminEmails.includes((user.email ?? '').toLowerCase());
+  const isAdminUser = await isAdmin(user.id);
 
   const statusFilter = parseStatusFilter(searchParams?.status);
   const page = parsePage(searchParams?.page);
-  const targetUserId = searchParams?.user && isAdmin ? searchParams.user : profile.id;
+  const targetUserId = searchParams?.user && isAdminUser ? searchParams.user : profile.id;
 
   let targetProfile: UserProfileRow = profile;
   if (targetUserId !== profile.id) {
@@ -144,11 +141,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Profile not found');
     }
 
-    const adminList = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean);
-    const canActOnAnyUser = adminList.includes((currentUser.email ?? '').toLowerCase());
+    const canActOnAnyUser = await isAdmin(currentUser.id);
 
     const targetUserIdFinal = canActOnAnyUser ? targetUserIdFromForm : actingProfile.id;
     if (!canActOnAnyUser && targetUserIdFromForm !== actingProfile.id) {
@@ -204,11 +197,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       throw new Error('Profile not found');
     }
 
-    const adminList = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean);
-    const canActOnAnyUser = adminList.includes((currentUser.email ?? '').toLowerCase());
+    const canActOnAnyUser = await isAdmin(currentUser.id);
 
     const targetUserIdFinal = canActOnAnyUser ? targetUserIdFromForm : actingProfile.id;
     if (!canActOnAnyUser && targetUserIdFromForm !== actingProfile.id) {
@@ -238,7 +227,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
               Review each finding and approve the takedown process or reject when it does not require action.
             </p>
           </div>
-          {isAdmin && targetProfile.id !== profile.id ? (
+          {isAdminUser && targetProfile.id !== profile.id ? (
             <span className="inline-flex items-center rounded-full border border-[#2a2b2f] bg-[#0f1013] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#9aa0a6]">
               Viewing: {targetProfile.name ?? targetProfile.email}
             </span>
@@ -260,7 +249,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
         pageSize={PAGE_SIZE}
         total={count ?? 0}
         targetUserId={targetProfile.id}
-        allowAdminFilters={isAdmin}
+        allowAdminFilters={isAdminUser}
       />
     </div>
   );

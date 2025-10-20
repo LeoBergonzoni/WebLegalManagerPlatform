@@ -8,10 +8,20 @@ type UserMenuProps = {
   email?: string;
   identityHref: string;
   billingHref: string;
+  adminHref?: string;
+  isAdmin?: boolean;
   signOutAction: () => Promise<void>;
 };
 
-export default function UserMenu({name, email, identityHref, billingHref, signOutAction}: UserMenuProps) {
+export default function UserMenu({
+  name,
+  email,
+  identityHref,
+  billingHref,
+  adminHref,
+  isAdmin,
+  signOutAction
+}: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,6 +71,15 @@ export default function UserMenu({name, email, identityHref, billingHref, signOu
           </div>
 
           <div className="flex flex-col gap-1 px-2 py-3">
+            {isAdmin && adminHref ? (
+              <Link
+                href={adminHref}
+                className="rounded-[12px] px-3 py-2 text-sm font-medium text-[#cfd3da] transition hover:bg-[#1a1c21] hover:text-[var(--wlm-yellow)]"
+                onClick={() => setOpen(false)}
+              >
+                Admin
+              </Link>
+            ) : null}
             <Link
               href={identityHref}
               className="rounded-[12px] px-3 py-2 text-sm font-medium text-[#cfd3da] transition hover:bg-[#1a1c21] hover:text-[var(--wlm-yellow)]"
