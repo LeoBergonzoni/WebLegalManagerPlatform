@@ -13,7 +13,7 @@
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -21,7 +21,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./*"
+        "*"
       ]
     },
     "plugins": [

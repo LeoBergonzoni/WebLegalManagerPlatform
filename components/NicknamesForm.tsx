@@ -10,7 +10,11 @@ type ToastState =
 
 const MAX_FIELDS = 4;
 
-export default function NicknamesForm() {
+type NicknamesFormProps = {
+  title?: string;
+};
+
+export default function NicknamesForm({title = 'Nicknames'}: NicknamesFormProps) {
   const supabase = useMemo(() => supabaseBrowserClient(), []);
   const [userId, setUserId] = useState<string | null>(null);
   const [nicknames, setNicknames] = useState<string[]>(() => Array(MAX_FIELDS).fill(''));
@@ -91,7 +95,7 @@ export default function NicknamesForm() {
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex max-w-lg flex-col gap-4 rounded-2xl border border-white/10 bg-[#121316] p-6 text-[var(--wlm-text)]">
       <header className="space-y-1 text-center">
-        <h1 className="text-xl font-semibold">Nicknames</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-sm text-white/70">Aggiungi fino a quattro nickname o alias collegati al tuo profilo.</p>
       </header>
 

@@ -1,26 +1,15 @@
 'use server';
 
-import {createTranslator, type Dictionary, type Messages, type Translator} from './translator';
-
-async function loadMessages(path: string) {
-  const module = await import(path);
-  return module.default as Messages;
-}
+import {getMessages, normalizeLocale} from '@/lib/i18n';
+import {createTranslator, type Dictionary, type Translator} from './translator';
 
 export async function getDictionary(locale: string): Promise<{t: Translator; dictionary: Dictionary}> {
-  const fallback = await loadMessages('../messages/en.json');
-
-  let messages = fallback;
-  if (locale && locale !== 'en') {
-    try {
-      messages = await loadMessages(`../messages/${locale}.json`);
-    } catch {
-      messages = fallback;
-    }
-  }
+  const normalized = normalizeLocale(locale);
+  const fallback = await getMessages('en');
+  const messages = normalized === 'en' ? fallback : await getMessages(normalized);
 
   const dictionary: Dictionary = {
-    locale: locale || 'en',
+    locale: normalized,
     messages,
     fallback
   };

@@ -1,6 +1,7 @@
 import {NextIntlClientProvider} from 'next-intl';
 import {notFound} from 'next/navigation';
 import type {ReactNode} from 'react';
+import {getMessages, normalizeLocale} from '@/lib/i18n';
 import '../globals.css';
 
 export function generateStaticParams() {
@@ -14,15 +15,15 @@ export default async function RootLayout({
   children: ReactNode;
   params: {locale: 'it' | 'en'};
 }) {
-  let messages;
-  try {
-    messages = (await import(`../../messages/${locale}.json`)).default;
-  } catch {
+  const loc = normalizeLocale(locale);
+  if (loc !== locale) {
     notFound();
   }
 
+  const messages = await getMessages(loc);
+
   return (
-    <html lang={locale}>
+    <html lang={loc}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -32,7 +33,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full">
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={loc} messages={messages}>
           {children}
         </NextIntlClientProvider>
       </body>
