@@ -31,7 +31,10 @@ const docTypeOptions = [
 export default function IdentityClient({authUserId, profileId, identity}: IdentityClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowserClient(), []);
-  const [storageUnavailable, setStorageUnavailable] = useState(() => !supabase);
+  const [bucketStatus, setBucketStatus] = useState<{ok: boolean; message: string}>(() => ({
+    ok: Boolean(supabase),
+    message: ''
+  }));
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [docType, setDocType] = useState<string>(identity?.doc_type ?? 'passport');
@@ -40,21 +43,24 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (!supabase) {
-      setStorageUnavailable(true);
-      return;
-    }
-
     let cancelled = false;
     async function verifyBucket() {
-      const {error: bucketError} = await supabase.storage.from('ids').list('', {limit: 1});
-      if (cancelled) {
-        return;
-      }
-      if (bucketError) {
-        setStorageUnavailable(true);
-      } else {
-        setStorageUnavailable(false);
+      try {
+        if (!supabase) return;
+        const {error: bucketError} = await supabase.storage.from('ids').list('', {limit: 1});
+        if (cancelled) {
+          return;
+        }
+        if (bucketError) {
+          console.error('[identity] bucket check failed', bucketError);
+          setBucketStatus({ok: false, message: 'Bucket "ids" non accessibile. Verifica policies.'});
+        } else {
+          setBucketStatus({ok: true, message: ''});
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error('[identity] bucket check exception', err);
+        setBucketStatus({ok: false, message: 'Errore durante la verifica del bucket.'});
       }
     }
 
@@ -117,7 +123,6 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
     resetMessages();
 
     if (!supabase) {
-      setStorageUnavailable(true);
       setError('Storage not configured. Please contact support.');
       return;
     }
@@ -127,8 +132,8 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
       return;
     }
 
-    if (storageUnavailable) {
-      setError('Storage not configured. Please contact support.');
+    if (!bucketStatus.ok) {
+      setError(bucketStatus.message || 'Storage not configured. Please contact support.');
       return;
     }
 
@@ -137,77 +142,90 @@ export default function IdentityClient({authUserId, profileId, identity}: Identi
     const fileNameSafe = file.name.replace(/\s+/g, '-');
     const objectPath = `${authUserId}/${Date.now()}-${fileNameSafe}`;
 
-    const {error: uploadError} = await supabase.storage
-      .from('ids')
-      .upload(objectPath, file, {
+    try {
+      const storageClient = supabase.storage.from('ids');
+      const {error: uploadError} = await storageClient.upload(objectPath, file, {
         cacheControl: '3600',
         contentType: file.type,
         upsert: false
       });
 
-    if (uploadError) {
-      const statusCode = (uploadError as {statusCode?: number}).statusCode ?? null;
-      const messageLower = uploadError.message.toLowerCase();
-      const misconfigured =
-        (statusCode && [401, 403, 404].includes(statusCode)) ||
-        messageLower.includes('bucket not found') ||
-        messageLower.includes('not authorized');
+      if (uploadError) {
+        const statusCode = (uploadError as {statusCode?: number}).statusCode ?? null;
+        const messageLower = uploadError.message.toLowerCase();
+        const misconfigured =
+          (statusCode && [401, 403, 404].includes(statusCode)) ||
+          messageLower.includes('bucket not found') ||
+          messageLower.includes('not authorized');
 
-      if (misconfigured) {
-        setStorageUnavailable(true);
-        setError('Storage not configured. Please contact support.');
-      } else {
-        setError(`Upload failed: ${uploadError.message}`);
+        if (misconfigured) {
+          setBucketStatus({ok: false, message: 'Storage non configurato. Contatta il supporto.'});
+          setError('Storage not configured. Please contact support.');
+        } else {
+          setError(`Upload failed: ${uploadError.message}`);
+        }
+        setUploading(false);
+        return;
       }
-      setUploading(false);
-      return;
-    }
 
-    const {data: publicUrlData} = supabase.storage.from('ids').getPublicUrl(objectPath);
-    const docUrl = publicUrlData.publicUrl;
+      const {data: publicUrlData} = storageClient.getPublicUrl(objectPath);
+      const docUrl = publicUrlData.publicUrl;
 
-    let dbError;
-    if (identity?.id) {
-      const {error} = await supabase
-        .from('identities')
-        .update({
+      let dbError;
+      if (identity?.id) {
+        const {error} = await supabase
+          .from('identities')
+          .update({
+            doc_type: docType,
+            doc_url: docUrl,
+            status: 'submitted',
+            verified_at: null
+          })
+          .eq('id', identity.id)
+          .eq('user_id', profileId);
+        dbError = error;
+      } else {
+        const {error} = await supabase.from('identities').insert({
+          user_id: profileId,
           doc_type: docType,
           doc_url: docUrl,
           status: 'submitted',
           verified_at: null
-        })
-        .eq('id', identity.id)
-        .eq('user_id', profileId);
-      dbError = error;
-    } else {
-      const {error} = await supabase.from('identities').insert({
-        user_id: profileId,
-        doc_type: docType,
-        doc_url: docUrl,
-        status: 'submitted',
-        verified_at: null
-      });
-      dbError = error;
-    }
+        });
+        dbError = error;
+      }
 
-    if (dbError) {
-      setError(`Could not save identity record: ${dbError.message}`);
+      if (dbError) {
+        setError(`Could not save identity record: ${dbError.message}`);
+        setUploading(false);
+        return;
+      }
+
+      setInfo('Document uploaded successfully. Status: pending review.');
+      setFile(null);
+      setPreviewUrl(null);
       setUploading(false);
-      return;
+      router.refresh();
+    } catch (err) {
+      console.error('[identity] upload exception', err);
+      setError('Unexpected error while uploading document.');
+      setUploading(false);
     }
-
-    setInfo('Document uploaded successfully. Status: pending review.');
-    setFile(null);
-    setPreviewUrl(null);
-    setUploading(false);
-    router.refresh();
   };
+
+  if (!supabase) {
+    return (
+      <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+        Storage non configurato o sessione non inizializzata. Riprova più tardi.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {storageUnavailable ? (
+      {!bucketStatus.ok ? (
         <div className="rounded-[18px] border border-amber-500/30 bg-amber-500/10 p-3 text-sm font-semibold text-amber-200">
-          Storage not configured
+          {bucketStatus.message || 'Storage not configured'}
         </div>
       ) : null}
       <div>
