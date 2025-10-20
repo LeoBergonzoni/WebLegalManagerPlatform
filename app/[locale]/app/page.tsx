@@ -2,13 +2,13 @@ import type {ReactNode} from 'react';
 import Link from 'next/link';
 import MetricsSection from './MetricsSection';
 import NicknamesForm from './NicknamesForm';
-import PricingCheckoutButton from '@/components/PricingCheckoutButton';
+import PricingInlineLoginGate from './PricingInlineLoginGate';
 import {getCurrentProfile} from '@/lib/supabase/profile';
 import {getNicknamesForUser} from '@/lib/supabase/nicknames';
 import {getUserFindingStats} from '@/lib/findings';
 import {getDictionary} from '@/i18n/getDictionary';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'; // evita cache SSR che nasconde errori
 
 type PageProps = {
   params: {locale: string};
@@ -16,8 +16,23 @@ type PageProps = {
 
 export default async function AppHomePage({params: {locale}}: PageProps) {
   const {t} = await getDictionary(locale);
-  const profile = await getCurrentProfile();
-  const findingStats = await getUserFindingStats();
+
+  let profile = null;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[dashboard] load profile failed', {err});
+    profile = null;
+  }
+
+  let findingStats = {removed: 0, delisted: 0, total: 0};
+  try {
+    findingStats = await getUserFindingStats();
+  } catch (err) {
+    console.error('[dashboard] load finding stats failed', {err});
+    findingStats = {removed: 0, delisted: 0, total: 0};
+  }
+
   const translateOrDefault = (key: string, fallback: string) => {
     const value = t(key);
     return value === key ? fallback : value;
@@ -48,101 +63,35 @@ export default async function AppHomePage({params: {locale}}: PageProps) {
     );
   }
 
-  const nicknames = await getNicknamesForUser(profile.id);
-  const normalizedPlan = (profile.plan ?? 'free').toLowerCase();
-  const hasPaymentMethod = Boolean(profile.stripe_customer_id);
-  const stripeEnabled = Boolean(
-    process.env.STRIPE_PUBLIC_KEY &&
-      process.env.STRIPE_SECRET_KEY &&
-      process.env.STRIPE_PRICE_STARTER &&
-      process.env.STRIPE_PRICE_PRO &&
-      process.env.NEXT_PUBLIC_SITE_URL
-  );
-  const planKey = (profile.plan ?? 'free').toLowerCase();
-  const planDisplay = translateOrDefault(`app.dashboard.planNames.${planKey}`, String(profile.plan ?? 'free'));
-  const billingKey = (profile.billing_status ?? 'inactive').toLowerCase();
+  let nicknames: string[] = [];
+  try {
+    nicknames = await getNicknamesForUser(profile.id);
+  } catch (err) {
+    console.error('[dashboard] load nicknames failed', {err});
+    nicknames = [];
+  }
+
+  const accountPlan = profile?.plan ?? 'free';
+  const accountBillingStatus = profile?.billing_status ?? 'inactive';
+  const plan = (accountPlan ?? 'free').toLowerCase();
+  const planDisplay = translateOrDefault(`app.dashboard.planNames.${plan}`, accountPlan ?? 'free');
+  const billingStatus = (accountBillingStatus ?? 'inactive').toLowerCase();
   const billingDisplay = translateOrDefault(
-    `app.dashboard.billingStatuses.${billingKey}`,
-    String(profile.billing_status ?? 'inactive')
+    `app.dashboard.billingStatuses.${billingStatus}`,
+    accountBillingStatus ?? 'inactive'
   );
   const welcomeFallback = translateOrDefault('app.dashboard.welcomeFallback', 'User');
   const welcomeName = profile.name?.trim() || profile.email || welcomeFallback;
   const welcomeHeading = t('app.dashboard.welcome').replace('{name}', welcomeName);
   const statusDisplay = t('app.dashboard.status.ok');
 
-  let pricingSection: ReactNode = null;
-
-  if (normalizedPlan === 'free') {
-    const pricingTiers = [
-      {
-        plan: 'starter' as const,
-        id: 'starter',
-        price: '€49',
-        cadence: '/mo',
-        badge: t('starter'),
-        description: t('starter_tag'),
-        bullets: [t('starter_1'), t('starter_2'), t('starter_3'), t('starter_4')]
-      },
-      {
-        plan: 'pro' as const,
-        id: 'pro',
-        price: '€149',
-        cadence: '/mo',
-        badge: t('pro'),
-        description: t('pro_tag'),
-        bullets: [t('pro_1'), t('pro_2'), t('pro_3'), t('pro_4')]
-      }
-    ];
-    const currentPlanLabel = t('app.dashboard.pricing.currentPlan').replace('{plan}', planDisplay);
-
-    pricingSection = (
-      <section className="mt-8 space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">{t('app.dashboard.pricing.title')}</h2>
-            <p className="text-sm text-white/70">{t('app.dashboard.pricing.subtitle')}</p>
-          </div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/60">
-            {currentPlanLabel}
-          </span>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          {pricingTiers.map((tier) => (
-            <div key={tier.id} className="relative rounded-[18px] border border-[#1b1d21] bg-[#0f1013] p-6">
-              <div className="absolute right-6 top-6 rounded-full bg-[var(--wlm-yellow)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#111]">
-                {tier.badge}
-              </div>
-              <div className="text-4xl font-extrabold text-[var(--wlm-text)]">
-                {tier.price}
-                <span className="ml-1 text-sm font-semibold text-[#9aa0a6]">{tier.cadence}</span>
-              </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-[#9aa0a6]">{tier.description}</p>
-              <ul className="mt-5 list-disc space-y-2 pl-5 text-sm text-[#cfd3da]">
-                {tier.bullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-              <div className="mt-6">
-                {hasPaymentMethod ? (
-                  <PricingCheckoutButton plan={tier.plan} disabled={!stripeEnabled}>
-                    {stripeEnabled ? `${t('choose')} ${tier.badge}` : t('app.dashboard.pricing.checkoutUnavailable')}
-                  </PricingCheckoutButton>
-                ) : (
-                  <Link
-                    href={`/${locale}/auth/sign-in?intent=upgrade`}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--wlm-yellow)] px-4 py-2 text-sm font-semibold text-[#111] transition hover:bg-[#ffd600]"
-                  >
-                    {`${t('choose')} ${tier.badge}`}
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-[#9aa0a6]">{t('success_note')}</p>
-      </section>
-    );
-  }
+  const pricingSection: ReactNode =
+    plan === 'free' ? (
+      <PricingInlineLoginGate
+        locale={locale}
+        currentPlanLabel={t('app.dashboard.pricing.currentPlan').replace('{plan}', planDisplay)}
+      />
+    ) : null;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 text-[var(--wlm-text)]">
@@ -167,7 +116,13 @@ export default async function AppHomePage({params: {locale}}: PageProps) {
 
       {pricingSection}
 
-      <MetricsSection stats={findingStats} />
+      <MetricsSection
+        stats={{
+          removed: Number(findingStats?.removed ?? 0),
+          delisted: Number(findingStats?.delisted ?? 0),
+          total: Number(findingStats?.total ?? 0)
+        }}
+      />
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
         <div className="flex flex-col gap-6 lg:flex-row">

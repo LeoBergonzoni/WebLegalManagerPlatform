@@ -55,8 +55,9 @@ export default function FindingsListClient({
   targetUserId,
   allowAdminFilters
 }: FindingsListClientProps) {
+  const safeFindings = Array.isArray(findings) ? findings : [];
   const [optimisticFindings, applyOptimistic] = useOptimistic<Finding[], OptimisticUpdate>(
-    findings,
+    safeFindings,
     (current, update) =>
       current.map((finding) =>
         finding.id === update.id ? {...finding, status: update.status} : finding
@@ -86,7 +87,9 @@ export default function FindingsListClient({
     [locale]
   );
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePageSize = Math.max(1, Number(pageSize ?? 1));
+  const safeTotal = Number(total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(safeTotal / safePageSize));
   const isFirstPage = page <= 1;
   const isLastPage = page >= totalPages;
 
@@ -153,8 +156,8 @@ export default function FindingsListClient({
     });
   };
 
-  const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const showingTo = total === 0 ? 0 : Math.min(total, page * pageSize);
+  const showingFrom = safeTotal === 0 ? 0 : (page - 1) * safePageSize + 1;
+  const showingTo = safeTotal === 0 ? 0 : Math.min(safeTotal, page * safePageSize);
 
   return (
     <div className="space-y-4">

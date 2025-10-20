@@ -217,6 +217,9 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
     revalidatePath(`/${locale}/app/findings?user=${targetUserIdFinal}`, 'page');
   }
 
+  const findingsRows = Array.isArray(findings) ? findings : [];
+  const safeCount = Number(count ?? findingsRows.length ?? 0);
+
   return (
     <div className="space-y-6">
       <div className="rounded-[24px] border border-[#1f2125] bg-[#121316] p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
@@ -236,7 +239,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
       </div>
 
       <FindingsListClient
-        findings={(findings ?? []).map((finding) => ({
+        findings={findingsRows.map((finding) => ({
           ...finding,
           created_at: finding.created_at
         }))}
@@ -247,7 +250,7 @@ export default async function FindingsPage({params: {locale}, searchParams}: Pag
         statusOptions={Array.from(STATUS_FILTERS)}
         page={page}
         pageSize={PAGE_SIZE}
-        total={count ?? 0}
+        total={safeCount}
         targetUserId={targetProfile.id}
         allowAdminFilters={isAdminUser}
       />

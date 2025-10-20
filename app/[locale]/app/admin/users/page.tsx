@@ -87,10 +87,10 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
     );
   }
 
-  const safeUsers = users ?? [];
+  const safeUsers = Array.isArray(users) ? users : [];
 
   const summaries = safeUsers.map((row) => {
-    const stats = row.findings ?? [];
+    const stats = Array.isArray(row.findings) ? row.findings : [];
     const counts = stats.reduce(
       (acc, item) => {
         const status = item.status ?? 'Found';

@@ -70,7 +70,8 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
     );
   }
 
-  const userOptions: UserOption[] = (users ?? []).map((row) => ({
+  const userRows = Array.isArray(users) ? users : [];
+  const userOptions: UserOption[] = userRows.map((row) => ({
     id: row.id,
     email: row.email ?? 'unknown@example.com',
     name: row.name ?? row.email ?? 'Unknown user'

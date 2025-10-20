@@ -312,12 +312,15 @@ export default function LandingPageContent() {
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>
-                <Link
-                  href={`/${currentLocale}/auth/sign-in?intent=upgrade`}
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[var(--wlm-yellow)] px-4 py-2 text-sm font-semibold text-[#111] transition hover:bg-[#ffd600]"
-                >
-                  {`${t('choose')} ${tier.badge}`}
-                </Link>
+                <div className="mt-6 space-y-2">
+                  <Link
+                    href={`/${currentLocale}/auth/sign-in?from=pricing`}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--wlm-yellow)] px-4 py-2 text-sm font-semibold text-[#111] transition hover:bg-[#ffd600]"
+                  >
+                    {`${t('choose')} ${tier.badge}`}
+                  </Link>
+                  <p className="text-xs text-[#9aa0a6]">{t('pricing_hint')}</p>
+                </div>
               </div>
             ))}
           </div>

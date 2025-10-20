@@ -22,6 +22,7 @@
   "f3_d": "Approve links, track states (Found → Submitted → Removed), download reports.",
   "pricing_title": "Pricing",
   "pricing_banner": "Sign up to access paid plans",
+  "pricing_hint": "Sign up to access paid plans",
   "starter": "Starter",
   "starter_tag": "For creators with few links per month",
   "starter_1": "1 scan/week",
