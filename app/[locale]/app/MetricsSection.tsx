@@ -1,6 +1,7 @@
 'use client';
 
 import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip} from 'recharts';
+import type {ValueType, NameType} from 'recharts/types/component/DefaultTooltipContent';
 
 type MetricsSectionProps = {
   stats: {
@@ -13,7 +14,7 @@ type MetricsSectionProps = {
 const SLICE_COLORS = ['#34d399', '#f97316'];
 
 export default function MetricsSection({stats}: MetricsSectionProps) {
-  const totalForChart = stats.removed + stats.delisted;
+  const totalForChart = (stats.removed ?? 0) + (stats.delisted ?? 0);
   const chartData =
     totalForChart > 0
       ? [
@@ -66,10 +67,10 @@ export default function MetricsSection({stats}: MetricsSectionProps) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: unknown, name: string) => {
-                    if (typeof value !== 'number') return value;
-                    const percentage = totalForChart === 0 ? 0 : (value / totalForChart) * 100;
-                    return [`${value} (${percentage.toFixed(1)}%)`, name];
+                  formatter={(val: ValueType, name: NameType) => {
+                    const v = Number(val ?? 0);
+                    const percentage = totalForChart === 0 ? 0 : (v / totalForChart) * 100;
+                    return [`${v} (${percentage.toFixed(1)}%)`, name] as [React.ReactNode, NameType];
                   }}
                 />
               </PieChart>
