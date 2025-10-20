@@ -107,19 +107,15 @@ export default async function IdentityPage({params: {locale}}: PageProps) {
   const authUserId = user.id;
   const profileId = profile.id;
 
-  type AdminSubmissionRow = {
-    id: string;
-    user_id: string | null;
-    doc_type: string | null;
-    doc_url: string | null;
-    status: string | null;
-    created_at: string;
-    user: {
-      auth_user_id: string | null;
-      email: string | null;
-      name: string | null;
-    } | null;
-  };
+type AdminSubmissionRow = {
+  id: string;
+  user_id: string;
+  doc_type: string | null;
+  doc_url: string | null;
+  status: string;
+  created_at: string;
+  user: {auth_user_id: string; email: string; name: string | null};
+};
 
   let adminSubmissions: AdminSubmissionRow[] = [];
   let adminLoadError: string | null = null;
@@ -129,12 +125,27 @@ export default async function IdentityPage({params: {locale}}: PageProps) {
     if (serviceSupabase) {
       const {data, error} = await serviceSupabase
         .from('identities')
-        .select('id, user_id, doc_type, doc_url, status, created_at, user:users(auth_user_id, email, name)')
-        .order('created_at', {ascending: false});
+        .select(
+          `
+          id,
+          user_id,
+          doc_type,
+          doc_url,
+          status,
+          created_at,
+          user:users!identities_user_id_fkey(
+            auth_user_id,
+            email,
+            name
+          )
+        `
+        )
+        .order('created_at', {ascending: false})
+        .returns<AdminSubmissionRow[]>();
       if (error) {
         adminLoadError = error.message;
       } else {
-        adminSubmissions = (data ?? []) as AdminSubmissionRow[];
+        adminSubmissions = data ?? [];
       }
     } else {
       adminLoadError = 'Supabase service role not configured.';
