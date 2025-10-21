@@ -1,8 +1,5 @@
-import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
-import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
-import {isAdmin} from '@/lib/auth';
 import NewFindingForm, {type NewFindingFormState} from '../NewFindingForm';
 
 type PageProps = {
@@ -33,25 +30,14 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
 
   const supabase = getServerSupabase();
   if (!supabase) {
-    redirect(`/${locale}/auth/sign-in`);
-  }
-
-  const {
-    data: {user}
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/${locale}/auth/sign-in`);
-  }
-
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
-  if (!profile) {
-    redirect(`/${locale}/app`);
-  }
-
-  const isAdminUser = await isAdmin(user.id);
-  if (!isAdminUser) {
-    redirect(`/${locale}/app`);
+    return (
+      <div className="space-y-4">
+        <div className="rounded-[20px] border border-[#1f2125] bg-[#121316] p-8 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+          <h1 className="text-3xl font-extrabold text-[var(--wlm-text)]">Admin • New finding</h1>
+          <p className="mt-3 text-sm text-red-300">Supabase client unavailable.</p>
+        </div>
+      </div>
+    );
   }
 
   const {data: users, error} = await supabase
@@ -96,16 +82,13 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
       return {status: 'error', message: 'Not authenticated'};
     }
 
-    const actingProfile = await ensureUserProfile({
-      supabase: supabaseAction,
-      authUser: {id: currentUser.id, email: currentUser.email ?? null}
-    });
-    if (!actingProfile) {
-      return {status: 'error', message: 'Profile not available'};
-    }
+    const {data: adminProfile, error: adminError} = await supabaseAction
+      .from('users')
+      .select<{is_admin: boolean | null}>('is_admin')
+      .eq('auth_user_id', currentUser.id)
+      .maybeSingle();
 
-    const canCreate = await isAdmin(currentUser.id);
-    if (!canCreate) {
+    if (adminError || !adminProfile?.is_admin) {
       return {status: 'error', message: 'You are not allowed to create findings'};
     }
 

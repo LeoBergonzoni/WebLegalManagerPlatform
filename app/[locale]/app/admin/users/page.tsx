@@ -1,8 +1,5 @@
 import Link from 'next/link';
-import {redirect} from 'next/navigation';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
-import {ensureUserProfile} from '@/lib/users/ensureUserProfile';
-import {isAdmin} from '@/lib/auth';
 
 type AdminUserRow = {
   id: string;
@@ -49,25 +46,14 @@ export default async function AdminUsersPage({params: {locale}}: PageProps) {
 
   const supabase = getServerSupabase();
   if (!supabase) {
-    redirect(`/${locale}/auth/sign-in`);
-  }
-
-  const {
-    data: {user}
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/${locale}/auth/sign-in`);
-  }
-
-  const profile = await ensureUserProfile({supabase, authUser: {id: user.id, email: user.email ?? null}});
-  if (!profile) {
-    redirect(`/${locale}/app`);
-  }
-
-  const isAdminUser = await isAdmin(user.id);
-  if (!isAdminUser) {
-    redirect(`/${locale}/app`);
+    return (
+      <div className="space-y-4">
+        <div className="rounded-[20px] border border-[#1f2125] bg-[#121316] p-8 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+          <h1 className="text-3xl font-extrabold text-[var(--wlm-text)]">Admin • Users</h1>
+          <p className="mt-3 text-sm text-red-300">Supabase client unavailable.</p>
+        </div>
+      </div>
+    );
   }
 
   const {data: users, error} = await supabase
