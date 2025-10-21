@@ -1,3 +1,4 @@
+import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
 import {getServerSupabase, isSupabaseConfigured} from '@/lib/supabase/server';
 import NewFindingForm, {type NewFindingFormState} from '../NewFindingForm';
@@ -84,12 +85,12 @@ export default async function AdminNewFindingPage({params: {locale}}: PageProps)
 
     const {data: adminProfile, error: adminError} = await supabaseAction
       .from('users')
-      .select<{is_admin: boolean | null}>('is_admin')
+      .select('is_admin')
       .eq('auth_user_id', currentUser.id)
       .maybeSingle();
 
     if (adminError || !adminProfile?.is_admin) {
-      return {status: 'error', message: 'You are not allowed to create findings'};
+      redirect(`/${locale}/app`);
     }
 
     const userId = formData.get('user_id');
