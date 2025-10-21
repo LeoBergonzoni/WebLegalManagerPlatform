@@ -45,11 +45,13 @@ export default async function AdminLayout({children, params: {locale}}: AdminLay
     redirect(`/${locale}/auth/sign-in?next=/${locale}/app/admin/users`);
   }
 
-  const {data: profile, error} = await supabase
+  const {data, error} = await supabase
     .from('users')
-    .select<AdminProfileRow>('is_admin')
+    .select('is_admin')
     .eq('auth_user_id', user.id)
     .maybeSingle();
+
+  const profile = data as AdminProfileRow | null;
 
   if (error || !profile?.is_admin) {
     redirect(`/${locale}/app`);
