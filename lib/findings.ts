@@ -10,7 +10,13 @@ type ProfileRow = {
   id: string;
 };
 
+type FindingStatusRow = {
+  id: string;
+  status: string | null;
+};
+
 type TakedownRow = {
+  finding_id: string | null;
   result: string | null;
 };
 
@@ -46,28 +52,52 @@ export async function getUserFindingStats(): Promise<FindingStats> {
     return EMPTY_STATS;
   }
 
-  const {data: takedowns, error} = await supabase
-    .from('takedowns')
-    .select('result')
+  const {data: findingsRows, error: findingsError} = await supabase
+    .from('findings')
+    .select('id, status')
     .eq('user_id', profile.id)
-    .returns<TakedownRow[]>();
+    .returns<FindingStatusRow[]>();
 
-  if (error || !takedowns) {
+  if (findingsError) {
     return EMPTY_STATS;
   }
 
-  let removed = 0;
-  let delisted = 0;
+  const removedIds = new Set<string>();
+  const delistedIds = new Set<string>();
 
-  for (const row of takedowns) {
-    const value = row.result?.toLowerCase();
-    if (value === 'removed') {
-      removed += 1;
-    } else if (value === 'delisted') {
-      delisted += 1;
+  const normalizedFindings = Array.isArray(findingsRows) ? findingsRows : [];
+
+  for (const row of normalizedFindings) {
+    const status = row.status?.toLowerCase();
+    if (status === 'removed') {
+      removedIds.add(row.id);
+    } else if (status === 'delisted') {
+      delistedIds.add(row.id);
     }
   }
 
+  const {data: takedowns} = await supabase
+    .from('takedowns')
+    .select('finding_id, result')
+    .eq('user_id', profile.id)
+    .returns<TakedownRow[]>();
+
+  const takedownRows = Array.isArray(takedowns) ? takedowns : [];
+  let fallbackKey = 0;
+
+  for (const row of takedownRows) {
+    const value = row.result?.toLowerCase();
+    if (value === 'removed') {
+      const key = row.finding_id ?? `removed:${fallbackKey++}`;
+      removedIds.add(key);
+    } else if (value === 'delisted') {
+      const key = row.finding_id ?? `delisted:${fallbackKey++}`;
+      delistedIds.add(key);
+    }
+  }
+
+  const removed = removedIds.size;
+  const delisted = delistedIds.size;
   const total = removed + delisted;
 
   return {removed, delisted, total};
