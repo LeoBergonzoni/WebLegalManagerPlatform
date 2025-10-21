@@ -55,9 +55,10 @@ export default async function AdminFindingsPage({params: {locale}}: PageProps) {
 
   const {data, error} = await supabase
     .from('findings')
-    .select(
-      'id, status, url, source_type, created_at, user:users(id, name, email)'
-    )
+    .select(`
+      id, status, url, source_type, created_at,
+      user:users!findings_user_id_fkey ( id, name, email )
+    `)
     .order('created_at', {ascending: false});
 
   if (error) {
@@ -71,7 +72,30 @@ export default async function AdminFindingsPage({params: {locale}}: PageProps) {
     );
   }
 
-  const findings = Array.isArray(data) ? (data as AdminFindingRow[]) : [];
+  // Tipi di appoggio locali per normalizzare la risposta grezza di Supabase
+  type AdminUser = {id: string; name: string | null; email: string | null};
+  type RawFinding = {
+    id: string;
+    status: string;
+    url: string;
+    source_type: string;
+    created_at: string;
+    user: AdminUser | AdminUser[] | null;
+  };
+
+  const raw = (data ?? []) as RawFinding[];
+
+  // Normalizza per combaciare con AdminFindingRow
+  const findings: AdminFindingRow[] = raw.map((r) => ({
+    id: r.id,
+    status: r.status,
+    url: r.url,
+    source_type: r.source_type,
+    created_at: r.created_at,
+    user: Array.isArray(r.user)
+      ? (r.user[0] ?? {id: '', name: null, email: null})
+      : r.user ?? {id: '', name: null, email: null}
+  }));
 
   async function updateFindingStatus(formData: FormData) {
     'use server';
